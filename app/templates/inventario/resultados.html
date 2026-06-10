@@ -42,7 +42,7 @@
         <td>{{ r.activo.responsable_rel.nombre if r.activo and r.activo.responsable_rel else '-' }}</td>
         <td>{% if r.oficina_nueva %}<span class="badge badge-info">{{ r.oficina_nueva.nombre }}</span>{% else %}—{% endif %}</td>
         <td>{% if r.responsable_nuevo %}<span class="badge badge-info">{{ r.responsable_nuevo.nombre }}</span>{% else %}—{% endif %}</td>
-        <td>{% if r.foto_url %}<a href="{{ r.foto_url }}" target="_blank" style="text-decoration:none">&#128247; Ver</a>{% endif %}</td>
+        <td>{% if r.foto_url %}<a href="{{ r.foto_url }}" target="_blank"><img src="{{ r.foto_url }}" style="width:60px;height:60px;object-fit:cover;border-radius:4px;border:1px solid #ddd" alt="foto"></a>{% else %}—{% endif %}</td>
         <td>{{ r.usuario or '-' }}</td>
         <td>{{ r.fecha_toma.strftime('%d/%m/%Y %H:%M') if r.fecha_toma else (r.fecha_sincronizacion.strftime('%d/%m/%Y %H:%M') if r.fecha_sincronizacion else '-') }}</td>
       </tr>
