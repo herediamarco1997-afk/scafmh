@@ -195,18 +195,20 @@ function mostrarDetalleActivo(activo) {
 function registrarResultado(resultado) {
   if (!currentDetalle) return;
   try {
-    var ofId = document.getElementById('nueva-oficina').value;
-    var respId = document.getElementById('nuevo-responsable').value;
-    var estId = document.getElementById('nuevo-estado').value;
+    var ofId = document.getElementById('nueva-oficina');
+    var respId = document.getElementById('nuevo-responsable');
+    var estId = document.getElementById('nuevo-estado');
+    var obsEl = document.getElementById('observacion');
+    var fotoEl = document.getElementById('foto-url-guardado');
     var data = JSON.stringify({
       codigo: currentDetalle.codigo,
       resultado: resultado,
-      observacion: document.getElementById('observacion').value,
-      foto_url: document.getElementById('foto-url-guardado').value || '',
-      ubicacion: document.getElementById('ubicacion').value,
-      nueva_oficina_id: ofId ? parseInt(ofId) : null,
-      nuevo_responsable_id: respId ? parseInt(respId) : null,
-      nuevo_estado: estId || null,
+      observacion: obsEl ? obsEl.value : '',
+      foto_url: fotoEl ? fotoEl.value : '',
+      ubicacion: '',
+      nueva_oficina_id: ofId && ofId.value ? parseInt(ofId.value) : null,
+      nuevo_responsable_id: respId && respId.value ? parseInt(respId.value) : null,
+      nuevo_estado: estId && estId.value ? estId.value : null,
     });
     var xhr = new XMLHttpRequest();
     xhr.open('POST', '/inventario/api/guardar', true);
