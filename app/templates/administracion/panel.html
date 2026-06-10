@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-title">Administradores</div>
+
+<div class="grid-3">
+    <div class="menu-card">
+        <div class="icono">📅</div>
+        <h3>Cierre de Gestión</h3>
+        <p style="font-size:12px; margin-top:5px;">
+            {% if gestion_actual %}
+            Gestión vigente: <strong>{{ gestion_actual.anio }}</strong>
+            {% endif %}
+        </p>
+        <div style="margin-top:10px; display:flex; gap:5px; justify-content:center;">
+            {% if not gestion_actual %}
+            <form method="POST" action="{{ url_for('administracion.iniciar_gestion') }}">
+                <input type="hidden" name="anio" value="{{ '' }}">
+                <button class="btn btn-success btn-sm">Iniciar Gestión</button>
+            </form>
+            {% else %}
+            <a href="{{ url_for('administracion.cerrar_gestion') }}" class="btn btn-danger btn-sm" onclick="return confirm('¿Cerrar gestión vigente?')">Cerrar Gestión</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="menu-card">
+        <div class="icono">🔄</div>
+        <h3>Cambio de Gestión</h3>
+        <div style="margin-top:10px;">
+            {% for g in gestiones_cerradas %}
+            <a href="{{ url_for('administracion.cambiar_gestion', gestion_id=g.id) }}" class="btn btn-warning btn-sm" style="margin:2px;">
+                Activar {{ g.anio }}
+            </a>
+            {% else %}
+            <p style="font-size:11px; color:#999;">No hay gestiones cerradas</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <a href="{{ url_for('administracion.ufv') }}" style="text-decoration:none;">
+        <div class="menu-card">
+            <div class="icono">📈</div>
+            <h3>Índices UFV</h3>
+            <p>Registro y consulta de UFV</p>
+        </div>
+    </a>
+
+    {% if gestion_actual %}
+    <div class="menu-card" style="border-color:#ff9800;">
+        <div class="icono">📈</div>
+        <h3>Actualización UFV</h3>
+        <p style="font-size:11px;">Aplica factor UFV a todos los activos de la gestión {{ gestion_actual.anio }}</p>
+        <a href="{{ url_for('administracion.procesar_actualizacion') }}" class="btn btn-warning btn-sm" onclick="return confirm('¿Procesar actualización UFV para todos los activos?')">Procesar</a>
+    </div>
+
+    <div class="menu-card" style="border-color:#2196f3;">
+        <div class="icono">📉</div>
+        <h3>Depreciación</h3>
+        <p style="font-size:11px;">Calcula y persiste la depreciación de la gestión {{ gestion_actual.anio }}</p>
+        <a href="{{ url_for('administracion.procesar_depreciacion_route') }}" class="btn btn-primary btn-sm" onclick="return confirm('¿Procesar depreciación para todos los activos de {{ gestion_actual.anio }}?')">Procesar</a>
+    </div>
+
+    <div class="menu-card" style="border-color:#f44336;">
+        <div class="icono">↩️</div>
+        <h3>Reversión</h3>
+        <p style="font-size:11px;">Restaura valores anteriores al último procesamiento</p>
+        <a href="{{ url_for('administracion.revertir_procesamiento_route') }}" class="btn btn-danger btn-sm" onclick="return confirm('¿REVERTIR el último procesamiento? Esta acción restaura los valores previos.')">Revertir</a>
+    </div>
+    {% endif %}
+
+    <a href="{{ url_for('administracion.reindexar') }}" style="text-decoration:none;">
+        <div class="menu-card">
+            <div class="icono">🔃</div>
+            <h3>Re-indexar</h3>
+            <p>Ordenar la información registrada</p>
+        </div>
+    </a>
+
+    <a href="{{ url_for('main.seguridad') }}" style="text-decoration:none;">
+        <div class="menu-card">
+            <div class="icono">🔐</div>
+            <h3>Seguridad</h3>
+            <p>Gestión de usuarios y contraseñas</p>
+        </div>
+    </a>
+
+    <div class="menu-card">
+        <div class="icono">📤</div>
+        <h3>Importar / Exportar</h3>
+        <div style="margin-top:10px;">
+            <form method="POST" action="{{ url_for('administracion.importar') }}" enctype="multipart/form-data" style="display:flex; flex-direction:column; gap:5px; align-items:center;">
+                <input type="file" name="archivo" accept=".json" style="font-size:11px; width:100%;">
+                <button type="submit" class="btn btn-success btn-sm" style="width:100%;">Importar</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if gestion_actual %}
+<div class="card" style="margin-top:15px;">
+    <h2>Información de la Gestión</h2>
+    <div class="detail-grid">
+        <div class="field"><label>Gestión</label><span>{{ gestion_actual.anio }}</span></div>
+        <div class="field"><label>Estado</label><span class="badge badge-success">VIGENTE</span></div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container">
+  <div class="card">
+    <h2>{{ nombre }}</h2>
+    <p style="font-size:12px;color:#666;">
+      ENTIDAD: 670 - Órgano Electoral Plurinacional &nbsp;|&nbsp;
+      UNIDAD: {{ unidad.codigo }} - {{ unidad.descripcion }} &nbsp;|&nbsp;
+      FECHA: {{ hoy.strftime('%d DE %B DE %Y')|upper }}
+    </p>
+  </div>
+
+  <div class="card" style="overflow-x:auto;">
+    <table style="font-size:10px;">
+      <thead>
+        <tr>
+          <th>N°</th>
+          <th>CÓDIGO</th>
+          <th>DESCRIPCIÓN</th>
+          <th>FECHA DE<br>INCORPORACIÓN</th>
+          <th>COSTO</th>
+          <th>COSTO<br>ACTUALIZADO</th>
+          <th>DEPRECIACIÓN</th>
+          <th>VALOR<br>NETO</th>
+          <th>OFICINA</th>
+          <th>RESPONSABLE</th>
+          <th>FIRMA</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ r.codigo }}</td>
+          <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.descripcion[:60] }}</td>
+          <td>{% if r.fecha_incorporacion %}{{ r.fecha_incorporacion.strftime('%d/%m/%Y') }}{% endif %}</td>
+          <td>{{ fmt(r.costo) }}</td>
+          <td>{{ fmt(r.costo_actual_inicial) }}</td>
+          <td>{{ fmt(r.dep_acum_total) }}</td>
+          <td>{{ fmt(r.valor_neto) }}</td>
+          <td>{{ r.oficina_nombre[:20] }}</td>
+          <td>{{ r.responsable_nombre[:20] }}</td>
+          <td>______________</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card" style="display:flex;justify-content:space-between;margin-top:40px;">
+    <div style="text-align:center;">
+      _________________________<br>
+      <strong>ENTREGADO POR</strong>
+    </div>
+    <div style="text-align:center;">
+      _________________________<br>
+      <strong>RECIBIDO POR</strong>
+    </div>
+    <div style="text-align:center;">
+      _________________________<br>
+      <strong>VºBº</strong>
+    </div>
+  </div>
+</div>
+{% endblock %}

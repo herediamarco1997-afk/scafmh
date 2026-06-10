@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-title">Transferencia - {{ activo.codigo }}</div>
+<div class="card" style="max-width:500px;">
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        <div class="form-group"><label>Fecha de Transferencia</label>{{ form.fecha() }}</div>
+        <div class="form-group"><label>Tipo de Transferencia</label>{{ form.tipo(onchange="toggleDestino(this.value)") }}</div>
+        <div id="unidad_destino_group" class="form-group" style="display:none;">
+            <label>Unidad Administrativa Destino</label>{{ form.unidad_destino_id() }}
+        </div>
+        <div id="misma_unidad_group" class="form-group" style="display:none;">
+            <div class="form-group"><label>Oficina Destino</label>{{ form.oficina_destino_id() }}</div>
+            <div class="form-group"><label>Responsable Destino</label>{{ form.responsable_destino_id() }}</div>
+        </div>
+        <button type="submit" class="btn btn-primary">Realizar Transferencia</button>
+        <a href="{{ url_for('activos.ver', id=activo.id) }}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+<script>
+function toggleDestino(val) {
+    document.getElementById('unidad_destino_group').style.display = val === 'ENTRE_UNIDADES' ? 'block' : 'none';
+    document.getElementById('misma_unidad_group').style.display = val === 'MISMA_UNIDAD' ? 'block' : 'none';
+}
+</script>
+{% endblock %}

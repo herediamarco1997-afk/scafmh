@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-title">Unidades Administrativas</div>
+<div class="action-bar">
+    <a href="{{ url_for('unidades.nuevo') }}" class="btn btn-primary">Nuevo</a>
+</div>
+<div class="card">
+    <table>
+        <tr><th>Código</th><th>Descripción</th><th>Ciudad</th><th>Acciones</th></tr>
+        {% for u in unidades %}
+        <tr>
+            <td>{{ u.codigo }}</td>
+            <td>{{ u.descripcion }}</td>
+            <td>{{ u.ciudad }}</td>
+            <td>
+                <a href="{{ url_for('unidades.modificar', id=u.id) }}" class="btn btn-warning btn-sm">Modificar</a>
+                <form method="POST" action="{{ url_for('main.seleccionar_unidad') }}" style="display:inline;">
+                    <input type="hidden" name="unidad_id" value="{{ u.id }}">
+                    <button type="submit" class="btn btn-success btn-sm">Seleccionar</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" style="text-align:center; color:#999;">No hay unidades registradas</td></tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

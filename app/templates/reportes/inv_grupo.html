@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container">
+  <div class="card">
+    <h2>{{ nombre }}</h2>
+    <p style="font-size:12px;color:#666;">
+      ENTIDAD: 670 - Órgano Electoral Plurinacional &nbsp;|&nbsp;
+      UNIDAD: {{ unidad.codigo }} - {{ unidad.descripcion }} &nbsp;|&nbsp;
+      AL: {{ hoy.strftime('%d DE %B DE %Y')|upper }}
+    </p>
+  </div>
+
+  <div class="card" style="overflow-x:auto;">
+    <table style="font-size:10px;">
+      <thead>
+        <tr>
+          <th>CÓDIGO</th>
+          <th>DESCRIPCIÓN</th>
+          <th>FECHA</th>
+          <th>COSTO</th>
+          <th>COSTO ACTUAL</th>
+          <th>DEP. ACUM.</th>
+          <th>DEP. GESTIÓN</th>
+          <th>VALOR NETO</th>
+          <th>GRUPO</th>
+          <th>OFICINA</th>
+          <th>RESPONSABLE</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td>{{ r.codigo }}</td>
+          <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.descripcion[:60] }}</td>
+          <td>{% if r.fecha_incorporacion %}{{ r.fecha_incorporacion.strftime('%d/%m/%Y') }}{% endif %}</td>
+          <td>{{ fmt(r.costo) }}</td>
+          <td>{{ fmt(r.costo_actual_inicial) }}</td>
+          <td>{{ fmt(r.dep_acum_inicial) }}</td>
+          <td>{{ fmt(r.dep_gestion) }}</td>
+          <td>{{ fmt(r.valor_neto) }}</td>
+          <td>{{ r.grupo_nombre[:20] }}</td>
+          <td>{{ r.oficina_nombre[:20] }}</td>
+          <td>{{ r.responsable_nombre[:20] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

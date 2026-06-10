@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container">
+  <div class="card">
+    <h2>{{ nombre }}</h2>
+    <p style="font-size:12px;color:#666;">
+      ENTIDAD: 670 - Órgano Electoral Plurinacional &nbsp;|&nbsp;
+      UNIDAD: {{ unidad.codigo }} - {{ unidad.descripcion }} &nbsp;|&nbsp;
+      AL: {{ hoy.strftime('%d DE %B DE %Y')|upper }} &nbsp;|&nbsp;
+      ÍNDICE UFV: {{ '%.5f'|format(ufv) }} Bs.
+    </p>
+  </div>
+
+  <div class="card" style="overflow-x:auto;">
+    <table style="font-size:11px;">
+      <thead>
+        <tr>
+          <th rowspan="2">GRUPO CONTABLE</th>
+          <th rowspan="2">CANT.</th>
+          <th rowspan="2">VIDA<br>ÚTIL</th>
+          <th rowspan="2">COSTO<br>HISTÓRICO</th>
+          <th rowspan="2">COSTO ACTUALIZ.<br>INICIAL</th>
+          <th rowspan="2">DEPREC.ACUM<br>TOTAL DE GRUPO</th>
+          <th rowspan="2">VALOR NETO<br>INICIAL</th>
+          <th rowspan="2">ACTUALIZACIÓN<br>GESTIÓN</th>
+          <th rowspan="2">COSTO TOTAL<br>ACTUALIZADO</th>
+          <th rowspan="2">DEPRECIACIÓN<br>GESTIÓN</th>
+          <th rowspan="2">ACTUALIZACIÓN<br>DEP.ACUM.</th>
+          <th rowspan="2">DEPRECIACIÓN<br>ACUMULADA</th>
+          <th rowspan="2">VALOR<br>NETO</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for g, r in resumen.items() %}
+        <tr>
+          <td><strong>{{ r.grupo }}</strong></td>
+          <td style="text-align:center;">{{ r.cantidad }}</td>
+          <td style="text-align:center;">{{ r.vida_util }}</td>
+          <td>{{ fmt(r.costo_historico) }}</td>
+          <td>{{ fmt(r.costo_actual_inicial) }}</td>
+          <td>{{ fmt(r.dep_acum_inicial) }}</td>
+          <td>{{ fmt(r.valor_neto_inicial) }}</td>
+          <td>{{ fmt(r.actualizacion_gestion) }}</td>
+          <td>{{ fmt(r.costo_total_actual) }}</td>
+          <td>{{ fmt(r.dep_gestion) }}</td>
+          <td>0.00</td>
+          <td>{{ fmt(r.dep_acum_total) }}</td>
+          <td>{{ fmt(r.valor_neto) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr style="font-weight:bold;background:#e8eef5;">
+          <td>TOTALES:</td>
+          <td style="text-align:center;">{{ total.cantidad }}</td>
+          <td></td>
+          <td>{{ fmt(total.costo_historico) }}</td>
+          <td>{{ fmt(total.costo_actual_inicial) }}</td>
+          <td>{{ fmt(total.dep_acum_inicial) }}</td>
+          <td>{{ fmt(total.valor_neto_inicial) }}</td>
+          <td>{{ fmt(total.actualizacion_gestion) }}</td>
+          <td>{{ fmt(total.costo_total_actual) }}</td>
+          <td>{{ fmt(total.dep_gestion) }}</td>
+          <td>0.00</td>
+          <td>{{ fmt(total.dep_acum_total) }}</td>
+          <td>{{ fmt(total.valor_neto) }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <div class="card" style="text-align:right;font-size:11px;color:#666;">
+    SCAFMH 1.0 - Página 1 de 1
+  </div>
+</div>
+{% endblock %}

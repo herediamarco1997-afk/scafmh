@@ -1,0 +1,22 @@
+{
+  "name": "SCAFMH Inventario",
+  "short_name": "SCAFMH",
+  "description": "Toma física SCAFMH",
+  "start_url": "/inventario/escanear",
+  "display": "standalone",
+  "background_color": "#1a3a5c",
+  "theme_color": "#1a3a5c",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/static/pwa/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/pwa/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

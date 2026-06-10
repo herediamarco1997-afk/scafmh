@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-title">Activo Fijo: {{ activo.codigo }}</div>
+
+<div class="card">
+    <div class="action-bar">
+        <span class="estado-info estado-{{ activo.estado }}">{{ activo.estado }}</span>
+        {% if activo.estado == 'ELABORADO' %}
+        <a href="{{ url_for('activos.modificar', id=activo.id) }}" class="btn btn-warning">Modificar</a>
+        <a href="{{ url_for('activos.aprobar', id=activo.id) }}" class="btn btn-success">Aprobar</a>
+        <a href="{{ url_for('activos.eliminar', id=activo.id) }}" class="btn btn-danger" onclick="return confirm('¿Eliminar?')">Eliminar</a>
+        {% endif %}
+        <a href="{{ url_for('activos.duplicar', id=activo.id) }}" class="btn btn-secondary">Duplicar</a>
+        <a href="{{ url_for('activos.revaluo', activo_id=activo.id) }}" class="btn btn-warning">Revalúo Técnico</a>
+        <a href="{{ url_for('activos.baja', activo_id=activo.id) }}" class="btn btn-danger">Disposición de Bienes</a>
+        <a href="{{ url_for('activos.transferir', activo_id=activo.id) }}" class="btn btn-primary">Transferencia</a>
+    </div>
+    <div class="detail-grid">
+        <div class="field"><label>Código</label><span>{{ activo.codigo }}</span></div>
+        <div class="field"><label>Fecha Incorporación</label><span>{{ activo.fecha_incorporacion }}</span></div>
+        <div class="field"><label>Descripción</label><span>{{ activo.descripcion }}</span></div>
+        <div class="field"><label>Grupo Contable</label><span>{{ activo.grupo.codigo if activo.grupo else '' }} - {{ activo.grupo.nombre if activo.grupo else '' }}</span></div>
+        <div class="field"><label>Auxiliar Contable</label><span>{{ activo.auxiliar.denominacion if activo.auxiliar else '' }}</span></div>
+        <div class="field"><label>Oficina</label><span>{{ activo.oficina_rel.nombre if activo.oficina_rel else '' }}</span></div>
+        <div class="field"><label>Responsable</label><span>{{ activo.responsable_rel.nombre if activo.responsable_rel else '' }}</span></div>
+        <div class="field"><label>Estado del Bien</label><span>{{ activo.estado_bien or '---' }}</span></div>
+        <div class="field"><label>Organismo Financiador</label><span>{{ activo.organismo_financiador or '---' }}</span></div>
+        <div class="field"><label>N° de Convenio</label><span>{{ activo.numero_convenio or '---' }}</span></div>
+        <div class="field"><label>Código RUBE</label><span>{{ activo.codigo_rube or '---' }}</span></div>
+        <div class="field"><label>Costo Inicial</label><span><strong>Bs {{ "{:,.2f}".format(activo.costo_inicial|float) }}</strong></span></div>
+    </div>
+    {% if activo.observaciones %}
+    <div class="field" style="margin-top:10px;"><label>Observaciones</label><span>{{ activo.observaciones }}</span></div>
+    {% endif %}
+</div>
+
+{% if revaluos %}
+<div class="card">
+    <h2>Revalúos Técnicos</h2>
+    <table>
+        <tr><th>Fecha</th><th>Nuevo Costo</th><th>Vida Útil</th><th>Disposición</th><th>Motivo</th></tr>
+        {% for r in revaluos %}
+        <tr>
+            <td>{{ r.fecha }}</td>
+            <td>Bs {{ "{:,.2f}".format(r.nuevo_costo|float) }}</td>
+            <td>{{ r.nueva_vida_util }} años</td>
+            <td>{{ r.disposicion_respaldo }}</td>
+            <td>{{ r.motivo }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endif %}
+
+{% if bajas %}
+<div class="card">
+    <h2>Bajas / Disposición de Bienes</h2>
+    <table>
+        <tr><th>Fecha</th><th>Tipo</th><th>Motivo</th><th>Disposición Legal</th></tr>
+        {% for b in bajas %}
+        <tr>
+            <td>{{ b.fecha }}</td>
+            <td><span class="badge badge-danger">{{ b.tipo }}</span></td>
+            <td>{{ b.motivo }}</td>
+            <td>{{ b.disposicion_legal or '---' }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endif %}
+
+{% if transferencias %}
+<div class="card">
+    <h2>Transferencias</h2>
+    <table>
+        <tr><th>Fecha</th><th>Tipo</th><th>Origen</th><th>Destino</th></tr>
+        {% for t in transferencias %}
+        <tr>
+            <td>{{ t.fecha }}</td>
+            <td><span class="badge badge-info">{{ t.tipo }}</span></td>
+            <td>{{ t.unidad_origen.descripcion if t.unidad_origen else t.oficina_origen.nombre if t.oficina_origen else '' }}</td>
+            <td>{{ t.unidad_destino.descripcion if t.unidad_destino else t.oficina_destino.nombre if t.oficina_destino else '' }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endif %}
+
+<a href="{{ url_for('activos.listar') }}" class="btn btn-secondary">Volver</a>
+{% endblock %}

@@ -1,0 +1,390 @@
+import {
+  guardarResultado, getPendientes, marcarSincronizado, getConteoPendientes,
+  cachearOficinas, getOficinas, cachearResponsables, getResponsables
+} from '/static/js/db.js?v=2';
+
+let currentDetalle = null;
+let oficinasCache = [];
+let responsablesCache = [];
+
+// Safe Quagga helpers (avoids 'Quagga is not defined' when CDN is slow)
+function quaggaDisponible() { return typeof Quagga !== 'undefined'; }
+
+function quaggaStop() { try { if (quaggaDisponible()) Quagga.stop(); } catch(e) { /* ignore */ } }
+
+// ─── Sincronización ────────────────────────────────────────────────────
+
+async function sincronizar() {
+  const btn = document.getElementById('btn-sync');
+  if (!btn) return;
+  btn.disabled = true;
+  btn.textContent = 'Sincronizando...';
+
+  const pendientes = await getPendientes();
+  if (pendientes.length === 0) {
+    btn.textContent = '0 pendientes';
+    btn.disabled = false;
+    return;
+  }
+
+  try {
+    const r = await fetch('/inventario/api/resultados', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(pendientes.map(p => ({
+        codigo: p.codigo,
+        resultado: p.resultado,
+        observacion: p.observacion,
+        foto_url: p.foto_url || '',
+        ubicacion: p.ubicacion || '',
+        responsable: p.responsable_text || '',
+        nueva_oficina_id: p.nueva_oficina_id || null,
+        nuevo_responsable_id: p.nuevo_responsable_id || null,
+        lat: p.lat,
+        lng: p.lng,
+        fecha_toma: p.fecha_toma,
+        dispositivo: p.dispositivo || '',
+      }))),
+    });
+    const data = await r.json();
+    if (data.created > 0) {
+      for (const p of pendientes) {
+        await marcarSincronizado(p.id);
+      }
+      await actualizarEstadisticas();
+      btn.textContent = `${data.created} sincronizados`;
+      if (data.errors && data.errors.length > 0) {
+        console.warn('Errores de sync:', data.errors);
+      }
+    } else {
+      btn.textContent = 'Error en sync';
+    }
+  } catch (e) {
+    btn.textContent = 'Error de conexión';
+    console.error(e);
+  }
+  btn.disabled = false;
+  setTimeout(() => actualizarPendientes(), 1000);
+}
+
+async function actualizarPendientes() {
+  const pendientes = await getConteoPendientes();
+  const el = document.getElementById('pendientes-count');
+  if (el) el.textContent = pendientes;
+  const btn = document.getElementById('btn-sync');
+  if (btn) btn.textContent = pendientes > 0 ? `Sincronizar (${pendientes})` : '0 pendientes';
+}
+
+async function actualizarEstadisticas() {
+  try {
+    const r = await fetch('/inventario/api/estadisticas');
+    const d = await r.json();
+    for (const [k, v] of Object.entries(d)) {
+      const el = document.getElementById(`stat-${k}`);
+      if (el) el.textContent = v;
+    }
+  } catch (e) { /* offline */ }
+}
+
+// ─── Carga de datos de referencia ───────────────────────────────────────
+
+async function cargarReferencias() {
+  try {
+    const [rOficinas, rResp] = await Promise.all([
+      fetch('/inventario/api/oficinas'),
+      fetch('/inventario/api/responsables'),
+    ]);
+    const oficinas = await rOficinas.json();
+    const responsables = await rResp.json();
+    await Promise.all([
+      cachearOficinas(oficinas),
+      cachearResponsables(responsables),
+    ]);
+    oficinasCache = oficinas;
+    responsablesCache = responsables;
+  } catch (e) {
+    console.warn('offline, usando caché local');
+    oficinasCache = await getOficinas();
+    responsablesCache = await getResponsables();
+  }
+  llenarSelectOficinas();
+}
+
+function llenarSelectOficinas() {
+  const sel = document.getElementById('nueva-oficina');
+  sel.innerHTML = '<option value="">— Sin cambio —</option>';
+  for (const o of oficinasCache.sort((a, b) => a.nombre.localeCompare(b.nombre))) {
+    const opt = document.createElement('option');
+    opt.value = o.id;
+    opt.textContent = `${o.nombre}`;
+    sel.appendChild(opt);
+  }
+}
+
+function llenarSelectResponsables(oficinaId, selectedId) {
+  const sel = document.getElementById('nuevo-responsable');
+  sel.innerHTML = '<option value="">— Sin cambio —</option>';
+  let lista = responsablesCache;
+  if (oficinaId) {
+    lista = lista.filter(r => r.oficina_id == oficinaId);
+  }
+  for (const r of lista.sort((a, b) => a.nombre.localeCompare(b.nombre))) {
+    const opt = document.createElement('option');
+    opt.value = r.id;
+    opt.textContent = `${r.nombre}${r.cargo ? ' — ' + r.cargo : ''}`;
+    if (selectedId && r.id == selectedId) opt.selected = true;
+    sel.appendChild(opt);
+  }
+}
+
+// ─── Búsqueda de activo ─────────────────────────────────────────────────
+
+async function buscarActivo(codigo) {
+  try {
+    const r = await fetch(`/inventario/api/activos/${encodeURIComponent(codigo.trim())}`, {
+      credentials: 'same-origin',
+    });
+    const ct = r.headers.get('content-type') || '';
+    if (!r.ok || !ct.includes('application/json')) {
+      console.warn('buscarActivo: status=%d, type=%s', r.status, ct);
+      return null;
+    }
+    return await r.json();
+  } catch (e) {
+    console.error('buscarActivo error:', e);
+    return null;
+  }
+}
+
+// ─── Mostrar detalle del activo ─────────────────────────────────────────
+
+function mostrarDetalleActivo(activo) {
+  currentDetalle = activo;
+
+  document.getElementById('detalle-codigo').textContent = activo.codigo;
+  document.getElementById('detalle-descripcion').textContent = activo.descripcion;
+  document.getElementById('detalle-fecha').textContent = activo.fecha_incorporacion || '-';
+  document.getElementById('detalle-grupo').textContent = activo.grupo || '-';
+  document.getElementById('detalle-auxiliar').textContent = activo.auxiliar || '-';
+  document.getElementById('detalle-costo').textContent = `Bs. ${Number(activo.costo_inicial).toLocaleString('es-BO', {minimumFractionDigits:2})}`;
+  document.getElementById('detalle-depreciacion').textContent = `Bs. ${Number(activo.depreciacion_acumulada).toLocaleString('es-BO', {minimumFractionDigits:2})}`;
+  document.getElementById('detalle-vida-util').textContent = activo.vida_util + ' años';
+  document.getElementById('detalle-estado-bien').textContent = activo.estado_bien || '-';
+  document.getElementById('detalle-observaciones').textContent = activo.observaciones || '-';
+
+  // Asignación actual
+  document.getElementById('actual-oficina').textContent = activo.oficina || '-';
+  document.getElementById('actual-responsable').textContent = activo.responsable || '-';
+
+  // Reset selects
+  document.getElementById('nueva-oficina').value = '';
+  llenarSelectResponsables(null, null);
+
+  document.getElementById('scanner-overlay').classList.add('hidden');
+  document.getElementById('result-panel').classList.remove('hidden');
+
+  document.getElementById('foto-preview').classList.add('hidden');
+  document.getElementById('foto-input').value = '';
+  document.getElementById('observacion').value = '';
+  document.getElementById('ubicacion').value = '';
+}
+
+function registrarResultado(resultado) {
+  if (!currentDetalle) return;
+
+  const nuevaOfId = document.getElementById('nueva-oficina').value;
+  const nuevaRespId = document.getElementById('nuevo-responsable').value;
+
+  const data = {
+    codigo: currentDetalle.codigo,
+    resultado: resultado,
+    observacion: document.getElementById('observacion').value,
+    foto_url: document.getElementById('foto-url-guardado').value || '',
+    ubicacion: document.getElementById('ubicacion').value,
+    nueva_oficina_id: nuevaOfId ? parseInt(nuevaOfId) : null,
+    nuevo_responsable_id: nuevaRespId ? parseInt(nuevaRespId) : null,
+  };
+  guardarResultado(data).then(() => {
+    actualizarPendientes();
+    volverAEscanear();
+  });
+}
+
+function volverAEscanear() {
+  currentDetalle = null;
+  document.getElementById('result-panel').classList.add('hidden');
+  document.getElementById('scanner-overlay').classList.remove('hidden');
+  iniciarScanner();
+}
+
+// ─── Event listeners ────────────────────────────────────────────────────
+
+function setupSync() {
+  const btn = document.getElementById('btn-sync');
+  if (btn) btn.addEventListener('click', sincronizar);
+  actualizarPendientes();
+  actualizarEstadisticas();
+}
+
+function setupFoto() {
+  const btn = document.getElementById('btn-foto');
+  const input = document.getElementById('foto-input');
+  if (btn && input) {
+    btn.addEventListener('click', () => input.click());
+    input.addEventListener('change', async e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const formData = new FormData();
+      formData.append('foto', file);
+      try {
+        const r = await fetch('/inventario/api/foto', { method: 'POST', body: formData });
+        const d = await r.json();
+        if (d.url) {
+          const preview = document.getElementById('foto-preview');
+          preview.src = d.url;
+          preview.classList.remove('hidden');
+          document.getElementById('foto-url-guardado').value = d.url;
+        }
+      } catch (e) {
+        alert('Error al subir foto (puedes intentar después con sync)');
+      }
+    });
+  }
+}
+
+function setupButtons() {
+  document.getElementById('btn-verificado').addEventListener('click', () => registrarResultado('VERIFICADO'));
+  document.getElementById('btn-novedad').addEventListener('click', () => registrarResultado('NOVEDAD'));
+  document.getElementById('btn-no-encontrado').addEventListener('click', () => registrarResultado('NO_ENCONTRADO'));
+  document.getElementById('btn-cancelar').addEventListener('click', volverAEscanear);
+}
+
+function setupOficinaFilter() {
+  const selOf = document.getElementById('nueva-oficina');
+  selOf.addEventListener('change', () => {
+    const ofId = selOf.value;
+    llenarSelectResponsables(ofId ? parseInt(ofId) : null, null);
+  });
+}
+
+// ─── Scanner ────────────────────────────────────────────────────────────
+
+async function iniciarScanner() {
+  if (!quaggaDisponible()) {
+    setTimeout(iniciarScanner, 1000);
+    return;
+  }
+  Quagga.init({
+    inputStream: {
+      name: 'Live',
+      type: 'LiveStream',
+      target: document.querySelector('#scanner-container'),
+      constraints: { width: 640, height: 480, facingMode: 'environment' },
+    },
+    locator: { patchSize: 'medium', halfSample: true },
+    numOfWorkers: 2,
+    frequency: 10,
+    decoder: { readers: [
+      'code_128_reader',
+      'ean_reader',
+      'ean_8_reader',
+      'code_39_reader',
+      'code_39_vin_reader',
+      'codabar_reader',
+      'upc_reader',
+      'upc_e_reader',
+    ]},
+    locate: true,
+  }, err => {
+    if (err) {
+      document.getElementById('scanner-error').textContent = 'Error al iniciar cámara: ' + err;
+      return;
+    }
+    Quagga.start();
+    document.getElementById('scanner-error').textContent = '';
+  });
+
+  Quagga.onDetected(async data => {
+    if (!data || !data.codeResult) return;
+    const code = data.codeResult.code;
+    if (!code || code.length < 3) return;
+    const activo = await buscarActivo(code);
+    if (activo) {
+      quaggaStop();
+      mostrarDetalleActivo(activo);
+    } else {
+      document.getElementById('scanner-error').textContent = `Código no encontrado: ${code}`;
+      setTimeout(() => document.getElementById('scanner-error').textContent = '', 3000);
+    }
+  });
+}
+
+// ─── Búsqueda manual ────────────────────────────────────────────────────
+
+function setupManualSearch() {
+  const input = document.getElementById('codigo-manual');
+  const btn = document.getElementById('btn-buscar-manual');
+  const error = document.getElementById('manual-error');
+
+  function doSearch() {
+    try {
+      const code = input.value.trim().toUpperCase();
+      if (!code) {
+        error.textContent = 'Ingresa un código de activo';
+        error.style.display = 'block';
+        return;
+      }
+      if (code.length < 3) {
+        error.textContent = 'El código debe tener al menos 3 caracteres';
+        error.style.display = 'block';
+        return;
+      }
+      error.style.display = 'none';
+      btn.disabled = true;
+      btn.textContent = 'Buscando...';
+
+      buscarActivo(code).then(activo => {
+        btn.disabled = false;
+        btn.textContent = 'Buscar';
+        if (activo) {
+          quaggaStop();
+          mostrarDetalleActivo(activo);
+          input.value = '';
+        } else {
+          error.textContent = `No se encontró activo con código "${code}".`;
+          error.style.display = 'block';
+        }
+      }).catch(err => {
+        btn.disabled = false;
+        btn.textContent = 'Buscar';
+        error.textContent = 'Error: ' + (err && err.message ? err.message : 'desconocido');
+        error.style.display = 'block';
+        console.error('doSearch.catch:', err);
+      });
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = 'Buscar';
+      error.textContent = 'Error interno: ' + (err && err.message ? err.message : 'desconocido');
+      error.style.display = 'block';
+      console.error('doSearch.error:', err);
+    }
+  }
+
+  btn.addEventListener('click', doSearch);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') doSearch();
+  });
+}
+
+// ─── Init ───────────────────────────────────────────────────────────────
+
+document.addEventListener('DOMContentLoaded', () => {
+  setupSync();
+  setupFoto();
+  setupButtons();
+  setupOficinaFilter();
+  setupManualSearch();
+  cargarReferencias();
+  iniciarScanner();
+});

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-title">Generar Reportes</div>
+<div class="card">
+    <table>
+        <tr><th>N°</th><th>Nombre del Reporte</th><th>Acción</th></tr>
+        {% for r in reportes %}
+        <tr>
+            <td>{{ r.num }}</td>
+            <td>{{ r.nombre }}</td>
+            <td>
+                <a href="{{ url_for('reportes.generar', num=r.num) }}" class="btn btn-primary btn-sm">Ver</a>
+                <a href="{{ url_for('reportes.generar', num=r.num, formato='pdf') }}" class="btn btn-danger btn-sm">PDF</a>
+                <a href="{{ url_for('reportes.exportar_csv', num=r.num) }}" class="btn btn-success btn-sm">CSV</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

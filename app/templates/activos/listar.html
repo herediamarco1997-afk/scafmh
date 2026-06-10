@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-title">Activos Fijos</div>
+<div class="toolbar">
+    <a href="{{ url_for('activos.nuevo') }}" class="btn btn-primary">Nuevo Activo</a>
+    <form method="GET" action="{{ url_for('activos.buscar') }}" style="display:flex; gap:8px; margin-left:auto;">
+        <select name="campo">
+            <option value="codigo" {% if campo == 'codigo' %}selected{% endif %}>Código</option>
+            <option value="descripcion" {% if campo == 'descripcion' %}selected{% endif %}>Descripción</option>
+            <option value="oficina" {% if campo == 'oficina' %}selected{% endif %}>Oficina</option>
+            <option value="responsable" {% if campo == 'responsable' %}selected{% endif %}>Responsable</option>
+        </select>
+        <input type="text" name="q" value="{{ q or '' }}" placeholder="Buscar..." style="width:200px;">
+        <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
+        {% if q %}<a href="{{ url_for('activos.listar') }}" class="btn btn-secondary btn-sm">Limpiar</a>{% endif %}
+    </form>
+    <a href="{{ url_for('activos.listar') }}?estado=ELABORADO" class="btn btn-warning btn-sm">Elaborados</a>
+    <a href="{{ url_for('activos.listar') }}?estado=APROBADO" class="btn btn-success btn-sm">Aprobados</a>
+    <a href="{{ url_for('activos.listar') }}" class="btn btn-secondary btn-sm">Todos</a>
+</div>
+<div class="card">
+    <table>
+        <tr>
+            <th>Código</th><th>Fecha</th><th>Descripción</th><th>Grupo</th><th>Oficina</th>
+            <th>Responsable</th><th>Costo Bs</th><th>Estado</th><th>Acciones</th>
+        </tr>
+        {% for a in activos %}
+        <tr>
+            <td>{{ a.codigo }}</td>
+            <td>{{ a.fecha_incorporacion }}</td>
+            <td>{{ a.descripcion[:50] }}{% if a.descripcion|length > 50 %}...{% endif %}</td>
+            <td>{{ a.grupo.codigo if a.grupo else '' }}</td>
+            <td>{{ a.oficina_rel.nombre if a.oficina_rel else '' }}</td>
+            <td>{{ a.responsable_rel.nombre if a.responsable_rel else '' }}</td>
+            <td style="text-align:right;">{{ "{:,.2f}".format(a.costo_inicial|float) }}</td>
+            <td><span class="estado-info estado-{{ a.estado }}">{{ a.estado }}</span></td>
+            <td>
+                <a href="{{ url_for('activos.ver', id=a.id) }}" class="btn btn-primary btn-sm">Ver</a>
+                {% if a.estado == 'ELABORADO' %}
+                <a href="{{ url_for('activos.modificar', id=a.id) }}" class="btn btn-warning btn-sm">Modificar</a>
+                <a href="{{ url_for('activos.aprobar', id=a.id) }}" class="btn btn-success btn-sm">Aprobar</a>
+                <a href="{{ url_for('activos.eliminar', id=a.id) }}" class="btn btn-danger btn-sm" onclick="return confirm('¿Eliminar este activo?')">Eliminar</a>
+                {% endif %}
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="9" style="text-align:center; color:#999;">No hay activos fijos registrados</td></tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

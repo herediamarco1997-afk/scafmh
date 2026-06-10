@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-title">Toma Física de Activos — Panel</div>
+<div class="grid-3" style="margin-bottom:20px">
+  <a href="{{ url_for('inventario.escanear') }}" class="menu-card" style="display:block;text-decoration:none;background:white;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,0.12);padding:20px;text-align:center">
+    <div class="icono">📷</div>
+    <h3>Escanear Activos</h3>
+    <p>Abre la cámara para escanear códigos de barras</p>
+  </a>
+  <div class="menu-card" style="text-align:center;padding:20px;background:white;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,0.12)">
+    <div class="icono">📊</div>
+    <h3>Avance</h3>
+    <p style="font-size:24px;font-weight:bold;color:#1a3a5c;margin-top:8px" id="stat-avance">-</p>
+    <p style="font-size:12px;color:#666" id="stat-total_escaneados">0</p>
+  </div>
+  <div class="menu-card" style="text-align:center;padding:20px;background:white;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,0.12)">
+    <div class="icono">📋</div>
+    <h3>Pendientes</h3>
+    <p style="font-size:24px;font-weight:bold;color:#856404;margin-top:8px" id="pendientes-count">0</p>
+    <p style="font-size:12px;color:#666">Resultados sin sincronizar</p>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Estadísticas</h2>
+  <div class="detail-grid">
+    <div class="field"><label>Total activos</label><span id="stat-total_activos">-</span></div>
+    <div class="field"><label>Verificados</label><span id="stat-verificados" style="color:#28a745;font-weight:bold">-</span></div>
+    <div class="field"><label>Con novedad</label><span id="stat-con_novedad" style="color:#ffc107;font-weight:bold">-</span></div>
+    <div class="field"><label>No encontrados</label><span id="stat-no_encontrados" style="color:#dc3545;font-weight:bold">-</span></div>
+    <div class="field"><label>Pendientes por escanear</label><span id="stat-pendientes">-</span></div>
+  </div>
+</div>
+
+<div class="action-bar">
+  <button class="btn btn-primary" id="btn-sync" onclick="event.preventDefault()">0 pendientes</button>
+  <a href="{{ url_for('inventario.resultados') }}" class="btn btn-secondary">Ver resultados sincronizados</a>
+</div>
+
+<link rel="manifest" href="/static/pwa/manifest.json">
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/static/pwa/sw.js');
+}
+</script>
+<script type="module" src="/static/js/scanner.js"></script>
+{% endblock %}

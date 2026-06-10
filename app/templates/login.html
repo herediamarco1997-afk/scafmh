@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="login-container">
+    <div class="card">
+        <div class="logo">🏛️</div>
+        <h2>SCAFMH</h2>
+        <p style="color:#666; font-size:13px; margin-bottom:20px;">Sistema de Control de Activos Fijos MH</p>
+        {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            <div class="form-group">
+                <label>Usuario</label>
+                {{ form.username(size=30) }}
+            </div>
+            <div class="form-group">
+                <label>Contraseña</label>
+                {{ form.password(size=30) }}
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%; padding:8px;">Ingresar</button>
+        </form>
+        <p style="margin-top:15px; font-size:11px; color:#999;">Usuario: admin | Contraseña: admin</p>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.env
+backups/
+temp_chm/
+temp_ufv/
+procesos/
+*.db.bak
+*.exe
+app_out.txt
+app_err.txt
+*.pdf
+*.jpg

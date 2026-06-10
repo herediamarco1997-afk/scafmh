@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container">
+  <div class="card">
+    <h2>{{ nombre }} Y MOVIMIENTOS</h2>
+    <p style="font-size:12px;color:#666;">
+      AL: {{ hoy.strftime('%d DE %B DE %Y')|upper }} &nbsp;|&nbsp;
+      ENTIDAD: 670 - Órgano Electoral Plurinacional &nbsp;|&nbsp;
+      UNIDAD: {{ unidad.codigo }} - {{ unidad.descripcion }} &nbsp;|&nbsp;
+      ÍNDICE UFV: {{ '%.5f'|format(ufv) }} Bs.
+    </p>
+  </div>
+
+  <div class="card" style="overflow-x:auto;">
+    <table style="font-size:9px;">
+      <thead>
+        <tr>
+          <th rowspan="2">GRUPO CONTABLE</th>
+          <th rowspan="2">Cant.<br>Inicial</th>
+          <th rowspan="2">Costo<br>Actualizado<br>Inicial</th>
+          <th rowspan="2">Depreciación<br>Acumulada<br>Inicial</th>
+          <th rowspan="2">Valor Neto<br>Inicial</th>
+          <th rowspan="2">Costo Altas<br>/ Revalúo</th>
+          <th rowspan="2">Costo<br>Bajas</th>
+          <th rowspan="2">Baja Dep.<br>Acum.<br>Inicial</th>
+          <th rowspan="2">Actualización<br>Gestión</th>
+          <th rowspan="2">Depreciación<br>Gestión</th>
+          <th rowspan="2">Actualización<br>Dep. Acum.</th>
+          <th rowspan="2">Cant.<br>Bajas</th>
+          <th rowspan="2">Cant.<br>Altas/R</th>
+          <th rowspan="2">Cant.<br>Neta</th>
+          <th rowspan="2">Actual.<br>de Bajas</th>
+          <th rowspan="2">Depreciac.<br>de Bajas</th>
+          <th rowspan="2">Actual.<br>Dep. Acum.<br>Bajas</th>
+          <th rowspan="2">Costo Total<br>de Grupo<br>Actualizado</th>
+          <th rowspan="2">Depreciación<br>Acumulada</th>
+          <th rowspan="2">Valor<br>Neto</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for g, r in resumen.items() %}
+        <tr>
+          <td><strong>{{ r.grupo }}</strong></td>
+          <td style="text-align:center;">{{ r.cantidad }}</td>
+          <td>{{ fmt(r.costo_actual_inicial) }}</td>
+          <td>{{ fmt(r.dep_acum_inicial) }}</td>
+          <td>{{ fmt(r.valor_neto_inicial) }}</td>
+          <td>0.00</td>
+          <td>0.00</td>
+          <td>0.00</td>
+          <td>{{ fmt(r.actualizacion_gestion) }}</td>
+          <td>{{ fmt(r.dep_gestion) }}</td>
+          <td>0.00</td>
+          <td style="text-align:center;">0</td>
+          <td style="text-align:center;">0</td>
+          <td style="text-align:center;">{{ r.cantidad }}</td>
+          <td>0.00</td>
+          <td>0.00</td>
+          <td>0.00</td>
+          <td>{{ fmt(r.costo_total_actual) }}</td>
+          <td>{{ fmt(r.dep_acum_total) }}</td>
+          <td>{{ fmt(r.valor_neto) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr style="font-weight:bold;background:#e8eef5;">
+          <td>TOTALES:</td>
+          <td style="text-align:center;">{{ total.cantidad }}</td>
+          <td>{{ fmt(total.costo_actual_inicial) }}</td>
+          <td>{{ fmt(total.dep_acum_inicial) }}</td>
+          <td>{{ fmt(total.valor_neto_inicial) }}</td>
+          <td>0.00</td>
+          <td>0.00</td>
+          <td>0.00</td>
+          <td>{{ fmt(total.actualizacion_gestion) }}</td>
+          <td>{{ fmt(total.dep_gestion) }}</td>
+          <td>0.00</td>
+          <td style="text-align:center;">0</td>
+          <td style="text-align:center;">0</td>
+          <td style="text-align:center;">{{ total.cantidad }}</td>
+          <td>0.00</td>
+          <td>0.00</td>
+          <td>0.00</td>
+          <td>{{ fmt(total.costo_total_actual) }}</td>
+          <td>{{ fmt(total.dep_acum_total) }}</td>
+          <td>{{ fmt(total.valor_neto) }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <div class="card" style="text-align:right;font-size:11px;color:#666;">
+    SCAFMH 1.0 - Página 1 de 1
+  </div>
+</div>
+{% endblock %}

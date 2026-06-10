@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-title">
+  <a href="{{ url_for('inventario.lista') }}" style="font-size:14px;font-weight:normal">&larr; Volver al panel</a>
+  — Resultados sincronizados
+</div>
+
+<div class="card">
+  <h2>Historial de toma física</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Código</th>
+        <th>Resultado</th>
+        <th>Observación</th>
+        <th>Ubicación</th>
+        <th>Responsable</th>
+        <th>Oficina Nueva</th>
+        <th>Responsable Nuevo</th>
+        <th>Foto</th>
+        <th>Fecha</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in resultados.items %}
+      <tr>
+        <td><strong>{{ r.codigo }}</strong></td>
+        <td>
+          {% if r.resultado == 'VERIFICADO' %}
+          <span class="badge badge-success">✅ Verificado</span>
+          {% elif r.resultado == 'NOVEDAD' %}
+          <span class="badge badge-warning">⚠️ Novedad</span>
+          {% else %}
+          <span class="badge badge-danger">❌ No encontrado</span>
+          {% endif %}
+        </td>
+        <td>{{ r.observacion or '' }}</td>
+        <td>{{ r.ubicacion_reportada or '' }}</td>
+        <td>{{ r.responsable_reportado or '' }}</td>
+        <td>{% if r.oficina_nueva %}<span class="badge badge-info">{{ r.oficina_nueva }}</span>{% endif %}</td>
+        <td>{% if r.responsable_nuevo %}<span class="badge badge-info">{{ r.responsable_nuevo }}</span>{% endif %}</td>
+        <td>{% if r.foto_url %}<a href="{{ r.foto_url }}" target="_blank">📷 Ver</a>{% endif %}</td>
+        <td>{{ r.fecha_sincronizacion.strftime('%d/%m/%Y %H:%M') if r.fecha_sincronizacion else '' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="9" style="text-align:center;color:#999">Sin resultados aún</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if resultados.pages > 1 %}
+<div class="action-bar">
+  {% for p in range(1, resultados.pages + 1) %}
+  <a href="?page={{ p }}" class="btn btn-sm {% if p == resultados.page %}btn-primary{% else %}btn-secondary{% endif %}">{{ p }}</a>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

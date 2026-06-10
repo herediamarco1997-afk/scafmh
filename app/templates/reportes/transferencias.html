@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-title">Reporte: {{ nombre }}</div>
+<div class="card">
+    <table>
+        <tr>
+          <th>Fecha</th>
+          <th>Activo</th>
+          <th>Oficina Origen</th>
+          <th>Responsable Origen</th>
+          <th>Oficina Destino</th>
+          <th>Responsable Destino</th>
+          <th>Usuario</th>
+        </tr>
+        {% for t in data %}
+        <tr>
+            <td>{{ t.fecha.strftime('%d/%m/%Y') }}</td>
+            <td>{{ t.activo.codigo if t.activo else '' }}</td>
+            <td>{{ t.oficina_origen.nombre if t.oficina_origen else '—' }}</td>
+            <td>{{ t.responsable_origen.nombre if t.responsable_origen else '—' }}</td>
+            <td>{{ t.oficina_dest.nombre if t.oficina_dest else '—' }}</td>
+            <td>{{ t.responsable_dest.nombre if t.responsable_dest else '—' }}</td>
+            <td>{{ t.usuario or '—' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" style="text-align:center; color:#999;">No hay transferencias registradas</td></tr>
+        {% endfor %}
+    </table>
+</div>
+<a href="{{ url_for('reportes.listar') }}" class="btn btn-secondary">Volver a Reportes</a>
+{% endblock %}

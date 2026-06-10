@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-title">Administración de Backups</div>
+<div class="action-bar">
+    <a href="{{ url_for('respaldos.respaldar') }}" class="btn btn-primary">Respaldar</a>
+</div>
+<div class="card">
+    <table>
+        <tr><th>Nombre del Archivo</th><th>Fecha</th><th>Tamaño</th><th>Acciones</th></tr>
+        {% for b in backups %}
+        <tr>
+            <td>{{ b.nombre }}</td>
+            <td>{{ b.fecha.strftime('%d/%m/%Y %H:%M') }}</td>
+            <td>{{ '{:,.0f}'.format(b.tamano) }} bytes</td>
+            <td>
+                <a href="{{ url_for('respaldos.restaurar', nombre=b.nombre) }}" class="btn btn-success btn-sm">Restaurar</a>
+                <a href="{{ url_for('respaldos.borrar', nombre=b.nombre) }}" class="btn btn-danger btn-sm" onclick="return confirm('¿Borrar este backup?')">Borrar</a>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" style="text-align:center; color:#999;">No hay backups disponibles</td></tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

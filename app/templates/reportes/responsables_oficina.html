@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-title">Reporte: {{ nombre }}</div>
+<div class="card">
+    <table>
+        <tr><th>Oficina</th><th>Responsable</th><th>Cargo</th><th>C.I.</th><th>Procedencia</th><th>Estado</th></tr>
+        {% for r in data %}
+        <tr>
+            <td>{{ r.oficina.nombre if r.oficina else '' }}</td>
+            <td>{{ r.nombre }}</td>
+            <td>{{ r.cargo }}</td>
+            <td>{{ r.carnet_identidad }}</td>
+            <td>{{ r.procedencia }}</td>
+            <td><span class="badge badge-{{ 'success' if r.estado == 'ACTIVO' else 'danger' }}">{{ r.estado }}</span></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" style="text-align:center; color:#999;">No hay datos</td></tr>
+        {% endfor %}
+    </table>
+</div>
+<a href="{{ url_for('reportes.listar') }}" class="btn btn-secondary">Volver a Reportes</a>
+{% endblock %}

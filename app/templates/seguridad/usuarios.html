@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-title">Seguridad - Administración de Usuarios</div>
+
+<div class="card" style="max-width:500px;">
+    <h2>Nuevo Usuario</h2>
+    {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        <div class="form-group">
+            <label>Nombre de Usuario</label>
+            {{ form.username(size=30) }}
+        </div>
+        <div class="form-group">
+            <label>Contraseña</label>
+            {{ form.password(size=30) }}
+        </div>
+        <div class="form-group">
+            <label>Rol</label>
+            {{ form.rol() }}
+        </div>
+        <button type="submit" class="btn btn-primary">Crear Usuario</button>
+    </form>
+</div>
+
+<div class="card">
+    <h2>Usuarios Registrados</h2>
+    <table>
+        <tr><th>Usuario</th><th>Rol</th></tr>
+        {% for u in usuarios %}
+        <tr>
+            <td>{{ u.username }}</td>
+            <td><span class="badge badge-{{ 'danger' if u.rol == 'ADMINISTRADOR' else 'info' }}">{{ u.rol }}</span></td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+<div class="card" style="max-width:400px;">
+    <h2>Cambiar Contraseña</h2>
+    <form method="POST" action="{{ url_for('main.cambiar_password') }}">
+        {{ form.hidden_tag() }}
+        <div class="form-group">
+            <label>Contraseña Actual</label>
+            <input type="password" name="password_actual" required class="form-control">
+        </div>
+        <div class="form-group">
+            <label>Nueva Contraseña</label>
+            <input type="password" name="password_nueva" required class="form-control">
+        </div>
+        <button type="submit" class="btn btn-warning">Cambiar Contraseña</button>
+    </form>
+</div>
+{% endblock %}

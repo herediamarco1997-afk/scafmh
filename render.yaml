@@ -1,0 +1,21 @@
+web:
+  plan: free
+  runtime: python
+  name: scafmh-activos
+  buildCommand: pip install -r requirements.txt
+  startCommand: gunicorn -w 4 -b 0.0.0.0:10000 run:app
+  envVars:
+    - key: FLASK_ENV
+      value: production
+    - key: SECRET_KEY
+      value: scafmh-secret-key-2026
+    - key: DATABASE_URL
+      value: sqlite:///activos.db
+    - key: CLOUDINARY_URL
+      sync: false
+    - key: PYTHON_VERSION
+      value: 3.12.0
+  disk:
+    name: data
+    mountPath: /opt/render/project/src
+    sizeGB: 1

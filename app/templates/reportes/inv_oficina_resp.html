@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container">
+  <div class="card">
+    <h2>{{ nombre }}</h2>
+    <p style="font-size:12px;color:#666;">
+      ENTIDAD: 670 - Órgano Electoral Plurinacional &nbsp;|&nbsp;
+      AL: {{ hoy.strftime('%d DE %B DE %Y')|upper }}
+    </p>
+  </div>
+
+  <div class="card" style="overflow-x:auto;">
+    <table style="font-size:10px;">
+      <thead>
+        <tr>
+          <th>OFICINA</th>
+          <th>RESPONSABLE</th>
+          <th>CÓDIGO</th>
+          <th>DESCRIPCIÓN</th>
+          <th>GRUPO</th>
+          <th>COSTO</th>
+          <th>COSTO ACTUAL</th>
+          <th>DEP. ACUM.</th>
+          <th>VALOR NETO</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% set ns = namespace(last_off='', last_resp='') %}
+        {% for r in rows %}
+        <tr>
+          <td>{% if r.oficina_nombre != ns.last_off %}{{ r.oficina_nombre }}{% set ns.last_off = r.oficina_nombre %}{% endif %}</td>
+          <td>{% if r.responsable_nombre != ns.last_resp %}{{ r.responsable_nombre }}{% set ns.last_resp = r.responsable_nombre %}{% endif %}</td>
+          <td>{{ r.codigo }}</td>
+          <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.descripcion[:60] }}</td>
+          <td>{{ r.grupo_nombre[:20] }}</td>
+          <td>{{ fmt(r.costo) }}</td>
+          <td>{{ fmt(r.costo_actual_inicial) }}</td>
+          <td>{{ fmt(r.dep_acum_inicial) }}</td>
+          <td>{{ fmt(r.valor_neto) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

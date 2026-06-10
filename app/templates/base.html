@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="/static/pwa/manifest.json">
+    <title>SCAFMH - Sistema de Control de Activos Fijos MH</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; color: #333; }
+        .header { background: #1a3a5c; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 18px; }
+        .header .user-info { font-size: 13px; color: #a8c8e8; }
+        .header .user-info span { color: white; font-weight: bold; }
+        .nav { background: #2c5f8a; padding: 0 20px; display: flex; gap: 2px; flex-wrap: wrap; }
+        .nav a, .nav button { color: white; text-decoration: none; padding: 10px 16px; font-size: 13px; border: none; background: none; cursor: pointer; display: inline-block; }
+        .nav a:hover, .nav button:hover { background: #1a3a5c; }
+        .nav .active { background: #1a3a5c; font-weight: bold; }
+        .container { padding: 20px; max-width: 1200px; margin: 0 auto; }
+        .card { background: white; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.12); padding: 20px; margin-bottom: 20px; }
+        .card h2 { font-size: 16px; margin-bottom: 15px; color: #1a3a5c; border-bottom: 2px solid #2c5f8a; padding-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid #e0e0e0; }
+        th { background: #f5f7fa; color: #1a3a5c; font-weight: 600; }
+        tr:hover { background: #f8f9fb; }
+        .btn { display: inline-block; padding: 6px 14px; font-size: 12px; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; }
+        .btn-primary { background: #2c5f8a; color: white; }
+        .btn-primary:hover { background: #1a3a5c; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-success:hover { background: #218838; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-danger:hover { background: #c82333; }
+        .btn-warning { background: #ffc107; color: #333; }
+        .btn-warning:hover { background: #e0a800; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-sm { padding: 3px 8px; font-size: 11px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 3px; color: #333; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 7px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+        .form-group textarea { height: 80px; resize: vertical; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .alert { padding: 10px 15px; border-radius: 4px; margin-bottom: 15px; font-size: 13px; }
+        .alert-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .alert-info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+        .badge-success { background: #d4edda; color: #155724; }
+        .badge-warning { background: #fff3cd; color: #856404; }
+        .badge-danger { background: #f8d7da; color: #721c24; }
+        .badge-info { background: #d1ecf1; color: #0c5460; }
+        .action-bar { margin-bottom: 15px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .login-container { max-width: 360px; margin: 80px auto; }
+        .login-container .card { text-align: center; }
+        .login-container h2 { border: none; text-align: center; font-size: 20px; margin-bottom: 20px; }
+        .login-container .logo { font-size: 40px; margin-bottom: 10px; }
+        .estado-info { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .estado-ELABORADO { background: #fff3cd; color: #856404; }
+        .estado-APROBADO { background: #d4edda; color: #155724; }
+        .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 15px; }
+        .toolbar form { display: flex; gap: 8px; align-items: center; }
+        .toolbar input, .toolbar select { padding: 5px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .grid-3 .menu-card { background: white; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.12); padding: 20px; text-align: center; cursor: pointer; transition: transform 0.1s; }
+        .grid-3 .menu-card:hover { transform: translateY(-2px); box-shadow: 0 3px 8px rgba(0,0,0,0.15); }
+        .grid-3 .menu-card .icono { font-size: 32px; margin-bottom: 8px; }
+        .grid-3 .menu-card h3 { font-size: 14px; color: #1a3a5c; }
+        .grid-3 .menu-card p { font-size: 11px; color: #666; margin-top: 4px; }
+        a { color: #2c5f8a; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .section-title { font-size: 18px; color: #1a3a5c; margin-bottom: 15px; font-weight: 600; }
+        .subnav { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .subnav a { padding: 5px 12px; border-radius: 4px; background: #e9ecef; font-size: 12px; text-decoration: none; color: #333; }
+        .subnav a:hover { background: #2c5f8a; color: white; text-decoration: none; }
+        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .detail-grid .field { padding: 6px 0; }
+        .detail-grid .field label { font-weight: 600; font-size: 12px; color: #666; display: block; }
+        .detail-grid .field span { font-size: 14px; }
+        @media (max-width: 768px) {
+            .form-row { grid-template-columns: 1fr; }
+            .grid-3 { grid-template-columns: 1fr; }
+            .detail-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    {% if current_user.is_authenticated %}
+    <div class="header">
+        <div>
+            <h1>SCAFMH - Sistema de Control de Activos Fijos MH</h1>
+            {% if session.get('unidad_actual_id') %}
+            <small style="color:#a8c8e8;">
+                {% for u in unidades if u.id == session.unidad_actual_id %}
+                {{ u.codigo }} - {{ u.descripcion }}
+                {% endfor %}
+            </small>
+            {% endif %}
+        </div>
+        <div class="user-info">
+            USUARIO: <span>{{ current_user.username }}</span> |
+            ROL: <span>{{ current_user.rol }}</span> |
+            <a href="{{ url_for('main.logout') }}" style="color:#a8c8e8;">Salir</a>
+        </div>
+    </div>
+    <div class="nav">
+        <a href="{{ url_for('main.inicio') }}" class="{% if request.endpoint == 'main.inicio' %}active{% endif %}">Inicio</a>
+        <a href="{{ url_for('unidades.listar') }}" class="{% if request.endpoint and 'unidades' in request.endpoint %}active{% endif %}">Unidades</a>
+        <a href="{{ url_for('oficinas.listar') }}" class="{% if request.endpoint and 'oficinas' in request.endpoint %}active{% endif %}">Oficinas y Responsables</a>
+        <a href="{{ url_for('grupos.listar') }}" class="{% if request.endpoint and 'grupos' in request.endpoint %}active{% endif %}">Grupos y Auxiliares</a>
+        <a href="{{ url_for('activos.listar') }}" class="{% if request.endpoint and 'activos' in request.endpoint %}active{% endif %}">Activos Fijos</a>
+        <a href="{{ url_for('transferencias.listar') }}" class="{% if request.endpoint and 'transferencias' in request.endpoint %}active{% endif %}">Transferencias</a>
+        {% if current_user.rol in ('ADMINISTRADOR', 'INVENTARIADOR') %}
+        <a href="{{ url_for('inventario.lista') }}" class="{% if request.endpoint and 'inventario' in request.endpoint %}active{% endif %}">Toma Física</a>
+        {% endif %}
+        <a href="{{ url_for('reportes.listar') }}" class="{% if request.endpoint and 'reportes' in request.endpoint %}active{% endif %}">Reportes</a>
+        {% if current_user.rol == 'ADMINISTRADOR' %}
+        <a href="{{ url_for('administracion.panel') }}" class="{% if request.endpoint and 'administracion' in request.endpoint %}active{% endif %}">Administradores</a>
+        <a href="{{ url_for('respaldos.listar') }}" class="{% if request.endpoint and 'respaldos' in request.endpoint %}active{% endif %}">Respaldos BD</a>
+        {% endif %}
+        <a href="{{ url_for('main.seguridad') }}" style="margin-left:auto;">Seguridad</a>
+    </div>
+    {% endif %}
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </div>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/static/pwa/sw.js').catch(function(e) {
+    console.warn('SW registration failed:', e);
+  });
+}
+</script>
+</body>
+</html>

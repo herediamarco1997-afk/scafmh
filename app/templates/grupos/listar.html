@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-title">Grupos Contables</div>
+<div class="card">
+    <table>
+        <tr><th>Código</th><th>Nombre del Grupo</th><th>Acciones</th></tr>
+        {% for g in grupos %}
+        <tr>
+            <td>{{ g.codigo }}</td>
+            <td>{{ g.nombre }}</td>
+            <td><a href="{{ url_for('grupos.ver', id=g.id) }}" class="btn btn-primary btn-sm">Ver Auxiliares</a></td>
+        </tr>
+        {% endfor %}
+    </table>
+    <p style="margin-top:10px; font-size:11px; color:#666;">Grupos establecidos según D.S. Nº 24051</p>
+</div>
+{% endblock %}

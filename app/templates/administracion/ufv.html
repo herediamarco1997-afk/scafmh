@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-title">Índices UFV</div>
+<div class="card" style="max-width:500px;">
+    {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        <div class="form-row">
+            <div class="form-group">
+                <label>Fecha</label>
+                {{ form.fecha() }}
+            </div>
+            <div class="form-group">
+                <label>Valor UFV</label>
+                {{ form.valor() }}
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Registrar</button>
+    </form>
+</div>
+<div class="card">
+    <h2>Historial de UFV</h2>
+    <table>
+        <tr><th>Fecha</th><th>Valor</th><th>Acción</th></tr>
+        {% for i in indices %}
+        <tr>
+            <td>{{ i.fecha }}</td>
+            <td>{{ i.valor }}</td>
+            <td><a href="{{ url_for('administracion.ufv_eliminar', id=i.id) }}" class="btn btn-danger btn-sm" onclick="return confirm('¿Eliminar?')">Eliminar</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="3" style="text-align:center; color:#999;">No hay índices registrados</td></tr>
+        {% endfor %}
+    </table>
+</div>
+<a href="{{ url_for('administracion.panel') }}" class="btn btn-secondary">Volver</a>
+{% endblock %}

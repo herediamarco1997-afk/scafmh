@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-title">Reporte: {{ nombre }}</div>
+<div class="card">
+    <table>
+        <tr>
+            <th>Código</th><th>Fecha</th><th>Descripción</th><th>Grupo</th><th>Auxiliar</th>
+            <th>Oficina</th><th>Responsable</th><th>Costo Bs</th><th>Estado</th>
+        </tr>
+        {% for a in data %}
+        <tr>
+            <td>{{ a.codigo }}</td>
+            <td>{{ a.fecha_incorporacion }}</td>
+            <td>{{ a.descripcion[:60] }}</td>
+            <td>{{ a.grupo.nombre if a.grupo else '' }}</td>
+            <td>{{ a.auxiliar.denominacion if a.auxiliar else '' }}</td>
+            <td>{{ a.oficina_rel.nombre if a.oficina_rel else '' }}</td>
+            <td>{{ a.responsable_rel.nombre if a.responsable_rel else '' }}</td>
+            <td style="text-align:right;">{{ "{:,.2f}".format(a.costo_inicial|float) }}</td>
+            <td><span class="badge badge-{{ 'success' if a.estado == 'APROBADO' else 'warning' }}">{{ a.estado }}</span></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="9" style="text-align:center; color:#999;">No hay datos para este reporte</td></tr>
+        {% endfor %}
+    </table>
+    {% if data %}
+    <p style="margin-top:10px; font-size:12px; color:#666;">Total registros: {{ data|length }}</p>
+    {% endif %}
+</div>
+<a href="{{ url_for('reportes.listar') }}" class="btn btn-secondary">Volver a Reportes</a>
+{% endblock %}

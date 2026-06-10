@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-title">Oficinas</div>
+<div class="card">
+    <table>
+        <tr><th>Código</th><th>Nombre</th><th>Estado</th><th>Acciones</th></tr>
+        {% for o in oficinas %}
+        <tr>
+            <td>{{ o.id }}</td>
+            <td>{{ o.nombre }}</td>
+            <td><span class="badge badge-{{ 'success' if o.estado == 'ACTIVO' else 'danger' }}">{{ o.estado }}</span></td>
+            <td><a href="{{ url_for('oficinas.ver', id=o.id) }}" class="btn btn-primary btn-sm">Ver</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" style="text-align:center; color:#999;">No hay oficinas en esta unidad</td></tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

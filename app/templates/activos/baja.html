@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-title">Disposición de Bienes (Baja) - {{ activo.codigo }}</div>
+<div class="card" style="max-width:500px;">
+    <p style="margin-bottom:10px; font-size:13px; color:#666;">
+        Activo: <strong>{{ activo.descripcion[:60] }}</strong><br>
+        Costo: <strong>Bs {{ "{:,.2f}".format(activo.costo_inicial|float) }}</strong>
+    </p>
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        <div class="form-group"><label>Fecha de Baja</label>{{ form.fecha() }}</div>
+        <div class="form-group"><label>Tipo de Baja</label>{{ form.tipo() }}</div>
+        <div class="form-group"><label>Motivo</label>{{ form.motivo(rows=3) }}</div>
+        <div class="form-group"><label>Disposición Legal</label>{{ form.disposicion_legal(size=40) }}</div>
+        <button type="submit" class="btn btn-danger">Registrar Baja</button>
+        <a href="{{ url_for('activos.ver', id=activo.id) }}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

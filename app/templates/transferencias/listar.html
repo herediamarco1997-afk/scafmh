@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="section-title">Transferencias de Activos</div>
+<div class="card" style="display:flex;gap:12px;margin-bottom:16px;">
+  <a href="{{ url_for('transferencias.individual') }}" class="btn btn-primary">
+    + Transferencia Individual
+  </a>
+  <a href="{{ url_for('transferencias.masiva') }}" class="btn btn-primary">
+    + Transferencia Masiva
+  </a>
+  <a href="{{ url_for('transferencias.exportar_dbf') }}" class="btn btn-danger" 
+     onclick="return confirm('¿Generar archivos DBF para sincronizar con VSIAF?')">
+    Exportar DBF (VSIAF)
+  </a>
+</div>
+
+<div class="card">
+  <h3>Historial de Transferencias</h3>
+  <table style="font-size:12px;">
+    <thead>
+      <tr>
+        <th>Fecha</th>
+        <th>Activo</th>
+        <th>Oficina Origen</th>
+        <th>Responsable Origen</th>
+        <th>Oficina Destino</th>
+        <th>Responsable Destino</th>
+        <th>Usuario</th>
+        <th>Acta</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in transfers %}
+      <tr>
+        <td>{{ t.fecha.strftime('%d/%m/%Y') }}</td>
+        <td>
+          {% if t.activo %}
+          <a href="{{ url_for('activos.ver', id=t.activo_id) }}">{{ t.activo.codigo }}</a>
+          {% else %}
+          {{ t.activo_id }}
+          {% endif %}
+        </td>
+        <td>{{ t.oficina_origen.nombre if t.oficina_origen else '—' }}</td>
+        <td>{{ t.responsable_origen.nombre if t.responsable_origen else '—' }}</td>
+        <td>{{ t.oficina_dest.nombre if t.oficina_dest else '—' }}</td>
+        <td>{{ t.responsable_dest.nombre if t.responsable_dest else '—' }}</td>
+        <td>{{ t.usuario or '—' }}</td>
+        <td>
+          {% if t.responsable_destino_id %}
+          <a href="{{ url_for('transferencias.acta', responsable_id=t.responsable_destino_id) }}" class="btn btn-sm" style="font-size:10px;padding:2px 6px;">Acta</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" style="text-align:center;color:#999;">No hay transferencias registradas</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

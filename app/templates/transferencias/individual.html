@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="section-title">Transferencia Individual de Activos</div>
+
+<div class="card">
+  <form method="POST">
+    <input type="hidden" name="accion" value="buscar">
+    <div style="display:flex;gap:8px;align-items:flex-end;">
+      <div class="form-group" style="flex:1;">
+        <label>Buscar activo (código o descripción)</label>
+        <input type="text" name="busqueda" value="{{ busqueda }}" placeholder="Ej: TSE-01-5040" style="width:100%;">
+      </div>
+      <button type="submit" class="btn btn-primary">Buscar</button>
+    </div>
+  </form>
+</div>
+
+{% if activos %}
+<form method="POST">
+  <input type="hidden" name="accion" value="transferir">
+  <input type="hidden" name="fecha" value="{{ hoy.strftime('%Y-%m-%d') }}">
+
+  <div class="card">
+    <h3>Seleccionar Destino</h3>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;">
+      <div class="form-group">
+        <label>Oficina Destino</label>
+        <select name="oficina_destino_id">
+          <option value="">— Sin cambio —</option>
+          {% for o in dest_oficinas %}
+          <option value="{{ o.id }}">{{ o.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Responsable Destino <span style="color:red;">*</span></label>
+        <select name="responsable_destino_id" required>
+          <option value="">— Seleccionar —</option>
+          {% for r in dest_responsables %}
+          <option value="{{ r.id }}">{{ r.nombre }} — {{ r.cargo or '' }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="margin-bottom:8px;">
+      <label><input type="checkbox" id="select_all" onchange="document.querySelectorAll('.activo-cb').forEach(c=>c.checked=this.checked)"> Seleccionar todos</label>
+    </div>
+    <table style="font-size:11px;">
+      <thead>
+        <tr>
+          <th style="width:30px;"></th>
+          <th>Código</th>
+          <th>Descripción</th>
+          <th>Oficina Actual</th>
+          <th>Responsable Actual</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in activos %}
+        <tr>
+          <td><input type="checkbox" name="activo_ids" value="{{ a.id }}" class="activo-cb"></td>
+          <td><a href="{{ url_for('activos.ver', id=a.id) }}">{{ a.codigo }}</a></td>
+          <td>{{ a.descripcion[:60] }}</td>
+          <td>{{ a.oficina_rel.nombre if a.oficina_rel else '' }}</td>
+          <td>{{ a.responsable_rel.nombre if a.responsable_rel else '' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="action-bar">
+    <button type="submit" class="btn btn-primary" onclick="return confirm('¿Confirmar transferencia de los activos seleccionados?')">
+      Ejecutar Transferencia
+    </button>
+    <a href="{{ url_for('transferencias.listar') }}" class="btn btn-secondary">Cancelar</a>
+  </div>
+</form>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-title">Menú Principal</div>
+
+{% if not session.get('unidad_actual_id') %}
+<div class="alert alert-info">
+    <strong>Seleccione una Unidad Administrativa</strong> para comenzar a trabajar.
+</div>
+<div class="card">
+    <h2>Unidades Administrativas Disponibles</h2>
+    {% if unidades %}
+    <table>
+        <tr><th>Código</th><th>Descripción</th><th>Ciudad</th><th></th></tr>
+        {% for u in unidades %}
+        <tr>
+            <td>{{ u.codigo }}</td>
+            <td>{{ u.descripcion }}</td>
+            <td>{{ u.ciudad }}</td>
+            <td>
+                <form method="POST" action="{{ url_for('main.seleccionar_unidad') }}">
+                    <input type="hidden" name="unidad_id" value="{{ u.id }}">
+                    <button type="submit" class="btn btn-success btn-sm">Seleccionar</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+    <p style="color:#666;">No hay unidades registradas. <a href="{{ url_for('unidades.nuevo') }}">Crear una unidad</a></p>
+    {% endif %}
+</div>
+{% else %}
+<div class="grid-3">
+    <a href="{{ url_for('unidades.listar') }}" style="text-decoration:none;">
+        <div class="menu-card">
+            <div class="icono">🏢</div>
+            <h3>Administrar Unidad</h3>
+            <p>Gestión de unidades administrativas</p>
+        </div>
+    </a>
+    <a href="{{ url_for('oficinas.listar') }}" style="text-decoration:none;">
+        <div class="menu-card">
+            <div class="icono">🏠</div>
+            <h3>Oficinas y Responsables</h3>
+            <p>Registro de oficinas y responsables</p>
+        </div>
+    </a>
+    <a href="{{ url_for('grupos.listar') }}" style="text-decoration:none;">
+        <div class="menu-card">
+            <div class="icono">📂</div>
+            <h3>Grupos y Auxiliares</h3>
+            <p>Grupos contables y auxiliares</p>
+        </div>
+    </a>
+    <a href="{{ url_for('activos.listar') }}" style="text-decoration:none;">
+        <div class="menu-card">
+            <div class="icono">📦</div>
+            <h3>Activos Fijos</h3>
+            <p>Registro, bajas, revalúos y transferencias</p>
+        </div>
+    </a>
+    <a href="{{ url_for('reportes.listar') }}" style="text-decoration:none;">
+        <div class="menu-card">
+            <div class="icono">📊</div>
+            <h3>Generar Reportes</h3>
+            <p>17 reportes predefinidos</p>
+        </div>
+    </a>
+    {% if current_user.rol == 'ADMINISTRADOR' %}
+    <a href="{{ url_for('administracion.panel') }}" style="text-decoration:none;">
+        <div class="menu-card">
+            <div class="icono">⚙️</div>
+            <h3>Administradores</h3>
+            <p>Cierre de gestión, UFV, seguridad</p>
+        </div>
+    </a>
+    <a href="{{ url_for('respaldos.listar') }}" style="text-decoration:none;">
+        <div class="menu-card">
+            <div class="icono">💾</div>
+            <h3>Respaldos BD</h3>
+            <p>Backup y restauración</p>
+        </div>
+    </a>
+    {% endif %}
+</div>
+
+{% if gestion %}
+<div class="card" style="margin-top:15px;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:13px; color:#666;">
+            Gestión: <strong>{{ gestion.anio }}</strong> |
+            Estado: <span class="badge badge-success">VIGENTE</span>
+        </span>
+        <span style="font-size:12px; color:#999;">
+            Último acceso: {{ current_user.username }}
+        </span>
+    </div>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

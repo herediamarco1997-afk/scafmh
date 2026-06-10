@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-title">Reporte: {{ nombre }}</div>
+<div class="card" style="max-width:600px; margin:0 auto;">
+    <h2 style="text-align:center;">ACTA DE DEVOLUCIÓN DE BIENES</h2>
+    <br>
+    {% if activo %}
+    <p>Por medio de la presente, se hace constar la devolución del siguiente bien:</p>
+    <br>
+    <p><strong>Código:</strong> {{ activo.codigo }}</p>
+    <p><strong>Descripción:</strong> {{ activo.descripcion }}</p>
+    <p><strong>Costo:</strong> Bs {{ "{:,.2f}".format(activo.costo_inicial|float) }}</p>
+    <p><strong>Oficina:</strong> {{ activo.oficina_rel.nombre if activo.oficina_rel else '' }}</p>
+    <p><strong>Responsable:</strong> {{ activo.responsable_rel.nombre if activo.responsable_rel else '' }}</p>
+    {% else %}
+    <p style="text-align:center; color:#999;">Seleccione un activo para generar el acta</p>
+    {% endif %}
+    <br>
+    <div style="display:flex; justify-content:space-between; margin-top:40px;">
+        <div>_________________________<br>Entrega</div>
+        <div>_________________________<br>Recibe</div>
+    </div>
+</div>
+<div class="action-bar">
+    <form method="GET" style="display:flex; gap:8px; align-items:flex-end;">
+        <div class="form-group">
+            <label>Código del Activo</label>
+            <input type="text" name="activo_id" placeholder="ID del activo">
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Generar</button>
+    </form>
+    <a href="{{ url_for('reportes.listar') }}" class="btn btn-secondary">Volver</a>
+</div>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-title">{{ 'Modificar' if unidad else 'Nueva' }} Unidad Administrativa</div>
+<div class="card" style="max-width:500px;">
+    {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        <div class="form-group">
+            <label>Código</label>
+            {{ form.codigo(size=20) }}
+        </div>
+        <div class="form-group">
+            <label>Ciudad</label>
+            {{ form.ciudad(size=20) }}
+        </div>
+        <div class="form-group">
+            <label>Descripción</label>
+            {{ form.descripcion(size=50) }}
+        </div>
+        <div style="display:flex; gap:8px;">
+            <button type="submit" class="btn btn-primary">Grabar</button>
+            <a href="{{ url_for('unidades.listar') }}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

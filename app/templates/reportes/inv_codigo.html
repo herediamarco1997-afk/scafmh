@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container">
+  <div class="card">
+    <h2>{{ nombre }}</h2>
+    <p style="font-size:12px;color:#666;">
+      ENTIDAD: 670 - Órgano Electoral Plurinacional &nbsp;|&nbsp;
+      UNIDAD: {{ unidad.codigo }} - {{ unidad.descripcion }} &nbsp;|&nbsp;
+      AL: {{ hoy.strftime('%d DE %B DE %Y')|upper }} &nbsp;|&nbsp;
+      ÍNDICE UFV: {{ '%.5f'|format(ufv) }} Bs.
+    </p>
+  </div>
+
+  <div class="card" style="overflow-x:auto;">
+    <table style="font-size:10px;">
+      <thead>
+        <tr>
+          <th>CÓDIGO</th>
+          <th>DESCRIPCIÓN</th>
+          <th>HISTÓRICO<br>COSTO</th>
+          <th>MIGRADO<br>COSTO</th>
+          <th>FECHA HISTO</th>
+          <th>R</th>
+          <th>FECHA MIGRA</th>
+          <th>COSTO FINAL<br>ACTUALIZADO</th>
+          <th>DEPRECIACIÓN</th>
+          <th>DEPREC.<br>GESTIÓN</th>
+          <th>ACUMULADA<br>TOTAL</th>
+          <th>VALOR<br>NETO</th>
+          <th>GRUPO CONTABLE</th>
+          <th>AUX. DE<br>GRUPO</th>
+          <th>OFICINA</th>
+          <th>RESPONSABLE</th>
+          <th>ID<br>BIEN</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td>{{ r.codigo }}</td>
+          <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ r.descripcion }}">{{ r.descripcion[:60] }}</td>
+          <td>{{ fmt(r.costo) }}</td>
+          <td>0.00</td>
+          <td>{% if r.fecha_incorporacion %}{{ r.fecha_incorporacion.strftime('%d/%m/%Y') }}{% else %}00/00/0000{% endif %}</td>
+          <td>S</td>
+          <td>/</td>
+          <td>{{ fmt(r.costo_actual_inicial) }}</td>
+          <td>{{ fmt(r.dep_acum_inicial) }}</td>
+          <td>{{ fmt(r.dep_gestion) }}</td>
+          <td>{{ fmt(r.dep_acum_total) }}</td>
+          <td>{{ fmt(r.valor_neto) }}</td>
+          <td>{{ r.grupo_nombre[:30] }}</td>
+          <td>{{ r.auxiliar_denom[:20] }}</td>
+          <td>{{ r.oficina_nombre[:25] }}</td>
+          <td>{{ r.responsable_nombre[:25] }}</td>
+          <td>1</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card" style="text-align:right;font-size:11px;color:#666;">
+    CANTIDAD DE ACTIVOS: {{ rows|length }} &nbsp;|&nbsp; SCAFMH 1.0
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-title">
+  <a href="{{ url_for('inventario.lista') }}" style="font-size:14px;font-weight:normal">&larr; Volver al panel</a>
+  — Escanear Activos
+</div>
+
+<div id="scanner-overlay">
+  <div class="card">
+    <p style="text-align:center;color:#666;margin-bottom:10px">Enfoca el código de barras de la etiqueta del activo</p>
+    <div id="scanner-container" style="width:100%;max-width:500px;margin:0 auto;position:relative;background:#000;border-radius:8px;overflow:hidden">
+      <div id="scanner-error" style="color:#ff6b6b;text-align:center;padding:8px;font-size:13px"></div>
+    </div>
+    <p id="quagga-status" style="text-align:center;font-size:12px;color:#999;margin-top:6px"></p>
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid #ddd;text-align:center">
+      <p style="font-size:13px;color:#666;margin-bottom:8px">
+        Si la etiqueta está dañada o la cámara no reconoce el código,
+        <br>escribe el código manualmente:
+      </p>
+      <div style="display:flex;gap:8px;max-width:400px;margin:0 auto">
+        <input id="codigo-manual" placeholder="Ej: TSE-01-19355" style="flex:1;padding:8px 12px;border:1px solid #ccc;border-radius:4px;font-size:14px;text-transform:uppercase">
+        <button class="btn btn-primary" id="btn-buscar-manual" style="padding:8px 16px;font-size:13px">Buscar</button>
+      </div>
+      <p id="manual-error" style="color:#dc3545;font-size:12px;margin-top:6px;display:none"></p>
+    </div>
+    <p style="text-align:center;margin-top:10px">
+      <span id="pendientes-count" style="display:inline-block;padding:3px 10px;border-radius:10px;background:#fff3cd;font-size:12px">0</span>
+      <span style="font-size:12px;color:#666"> resultados pendientes de sync</span>
+    </p>
+  </div>
+</div>
+
+<div id="result-panel" class="hidden">
+  <div class="card">
+    <h2>Datos del Activo</h2>
+    <div class="detail-grid" style="grid-template-columns:1fr 1fr">
+      <div class="field"><label>Código</label><span id="detalle-codigo" style="font-weight:bold;font-size:16px">-</span></div>
+      <div class="field"><label>Fecha de Incorporación</label><span id="detalle-fecha">-</span></div>
+      <div class="field"><label>Descripción</label><span id="detalle-descripcion" style="grid-column:span 2">-</span></div>
+      <div class="field"><label>Grupo Contable</label><span id="detalle-grupo">-</span></div>
+      <div class="field"><label>Auxiliar Contable</label><span id="detalle-auxiliar">-</span></div>
+      <div class="field"><label>Costo Inicial</label><span id="detalle-costo" style="font-weight:bold">-</span></div>
+      <div class="field"><label>Depreciación Acumulada</label><span id="detalle-depreciacion">-</span></div>
+      <div class="field"><label>Vida Útil</label><span id="detalle-vida-util">-</span></div>
+      <div class="field"><label>Estado del Bien</label><span id="detalle-estado-bien">-</span></div>
+      <div class="field" style="grid-column:span 2"><label>Observaciones</label><span id="detalle-observaciones">-</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Asignación Actual</h2>
+    <div class="detail-grid">
+      <div class="field"><label>Oficina</label><span id="actual-oficina" style="font-weight:bold;color:#1a3a5c">-</span></div>
+      <div class="field"><label>Responsable</label><span id="actual-responsable" style="font-weight:bold;color:#1a3a5c">-</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Cambiar Asignación (opcional)</h2>
+    <p style="font-size:12px;color:#666;margin-bottom:12px">Si el activo cambió de oficina o responsable, selecciona los nuevos valores:</p>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Nueva Oficina</label>
+        <select id="nueva-oficina">
+          <option value="">— Sin cambio —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Nuevo Responsable</label>
+        <select id="nuevo-responsable">
+          <option value="">— Sin cambio —</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Registrar resultado</h2>
+    <div class="form-group">
+      <label>Observación</label>
+      <textarea id="observacion" placeholder="Ej: equipo en buen estado, tiene una abolladura..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Foto</label>
+      <input type="hidden" id="foto-url-guardado">
+      <button class="btn btn-secondary" id="btn-foto">📸 Tomar foto</button>
+      <input type="file" id="foto-input" accept="image/*" capture="environment" style="display:none">
+      <img id="foto-preview" class="hidden" style="max-width:200px;margin-top:8px;border-radius:4px">
+    </div>
+  </div>
+
+  <div class="action-bar" style="flex-wrap:wrap">
+    <button class="btn btn-success" id="btn-verificado" style="padding:10px 20px;font-size:14px">✅ Verificado</button>
+    <button class="btn btn-warning" id="btn-novedad" style="padding:10px 20px;font-size:14px">⚠️ Con Novedad</button>
+    <button class="btn btn-danger" id="btn-no-encontrado" style="padding:10px 20px;font-size:14px">❌ No Encontrado</button>
+    <button class="btn btn-secondary" id="btn-cancelar" style="padding:10px 20px">Cancelar</button>
+  </div>
+</div>
+
+<link rel="manifest" href="/static/pwa/manifest.json">
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/static/pwa/sw.js');
+}
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/1.0.0-alpha.2/quagga.min.js"
+        onerror="document.getElementById('quagga-status').textContent='Escáner de cámara no disponible, usa búsqueda manual'"></script>
+<script type="module" src="/static/js/scanner.js?v=2"></script>
+<style>
+#scanner-container video { width:100% !important; height:auto !important; }
+#scanner-container canvas { display:none; }
+.hidden { display:none !important; }
+</style>
+{% endblock %}

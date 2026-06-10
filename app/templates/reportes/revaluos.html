@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-title">Reporte: {{ nombre }}</div>
+<div class="card">
+    <table>
+        <tr><th>Fecha</th><th>Activo</th><th>Nuevo Costo</th><th>Vida Útil</th><th>Disposición</th><th>Motivo</th></tr>
+        {% for r in data %}
+        <tr>
+            <td>{{ r.fecha }}</td>
+            <td>{{ r.activo.codigo if r.activo else '' }}</td>
+            <td style="text-align:right;">Bs {{ "{:,.2f}".format(r.nuevo_costo|float) }}</td>
+            <td>{{ r.nueva_vida_util }} años</td>
+            <td>{{ r.disposicion_respaldo }}</td>
+            <td>{{ r.motivo[:40] }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" style="text-align:center; color:#999;">No hay revalúos registrados</td></tr>
+        {% endfor %}
+    </table>
+</div>
+<a href="{{ url_for('reportes.listar') }}" class="btn btn-secondary">Volver a Reportes</a>
+{% endblock %}

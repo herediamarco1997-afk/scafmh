@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-title">Oficina: {{ oficina.nombre }}</div>
+
+<div class="card">
+    <h2>Datos de la Oficina</h2>
+    <form method="POST" action="{{ url_for('oficinas.modificar', id=oficina.id) }}">
+        {{ oform.hidden_tag() }}
+        <div class="form-row">
+            <div class="form-group">
+                <label>Nombre</label>
+                {{ oform.nombre(size=40) }}
+            </div>
+            <div class="form-group">
+                <label>Estado</label>
+                {{ oform.estado() }}
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Observación</label>
+            {{ oform.observacion(rows=2) }}
+        </div>
+        <button type="submit" class="btn btn-primary">Modificar</button>
+        <a href="{{ url_for('oficinas.cambiar_estado', id=oficina.id) }}" class="btn btn-{{ 'danger' if oficina.estado == 'ACTIVO' else 'success' }} btn-sm">
+            Cambiar a {{ 'INACTIVO' if oficina.estado == 'ACTIVO' else 'ACTIVO' }}
+        </a>
+    </form>
+</div>
+
+<div class="card">
+    <h2>Responsables</h2>
+    <div class="action-bar">
+        <form method="POST" action="{{ url_for('oficinas.responsable_nuevo', oficina_id=oficina.id) }}" style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end;">
+            {{ rform.hidden_tag() }}
+            <div><label style="font-size:11px;">Nombre</label>{{ rform.nombre(size=20) }}</div>
+            <div><label style="font-size:11px;">Cargo</label>{{ rform.cargo(size=15) }}</div>
+            <div><label style="font-size:11px;">CI</label>{{ rform.carnet_identidad(size=12) }}</div>
+            <div><label style="font-size:11px;">Procedencia</label>{{ rform.procedencia(size=12) }}</div>
+            <button type="submit" class="btn btn-success btn-sm">Nuevo</button>
+        </form>
+    </div>
+    <table>
+        <tr><th>Código</th><th>Nombre</th><th>Cargo</th><th>C.I.</th><th>Procedencia</th><th>Estado</th><th>Acciones</th></tr>
+        {% for r in responsables %}
+        <tr>
+            <td>{{ r.id }}</td>
+            <td>{{ r.nombre }}</td>
+            <td>{{ r.cargo }}</td>
+            <td>{{ r.carnet_identidad }}</td>
+            <td>{{ r.procedencia }}</td>
+            <td><span class="badge badge-{{ 'success' if r.estado == 'ACTIVO' else 'danger' }}">{{ r.estado }}</span></td>
+            <td>
+                <a href="{{ url_for('oficinas.responsable_cambiar_estado', id=r.id) }}" class="btn btn-{{ 'danger' if r.estado == 'ACTIVO' else 'success' }} btn-sm">
+                    {{ 'Inactivar' if r.estado == 'ACTIVO' else 'Activar' }}
+                </a>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" style="text-align:center; color:#999;">No hay responsables registrados</td></tr>
+        {% endfor %}
+    </table>
+</div>
+<a href="{{ url_for('oficinas.listar') }}" class="btn btn-secondary">Volver</a>
+{% endblock %}

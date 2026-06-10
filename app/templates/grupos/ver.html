@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-title">Grupo: {{ grupo.codigo }} - {{ grupo.nombre }}</div>
+
+<div class="card">
+    <h2>Auxiliares Contables</h2>
+    <div class="action-bar">
+        <form method="POST" action="{{ url_for('grupos.auxiliar_nuevo', grupo_id=grupo.id) }}" style="display:flex; gap:8px; align-items:flex-end;">
+            {{ form.hidden_tag() }}
+            <div><label style="font-size:11px;">Denominación</label>{{ form.denominacion(size=40) }}</div>
+            <button type="submit" class="btn btn-success btn-sm">Nuevo</button>
+        </form>
+    </div>
+    <table>
+        <tr><th>Código</th><th>Denominación</th><th>Acciones</th></tr>
+        {% for a in auxiliares %}
+        <tr>
+            <td>{{ a.id }}</td>
+            <td>{{ a.denominacion }}</td>
+            <td>
+                <a href="{{ url_for('grupos.auxiliar_eliminar', id=a.id) }}" class="btn btn-danger btn-sm" onclick="return confirm('¿Eliminar este auxiliar?')">Eliminar</a>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="3" style="text-align:center; color:#999;">No hay auxiliares para este grupo</td></tr>
+        {% endfor %}
+    </table>
+</div>
+<a href="{{ url_for('grupos.listar') }}" class="btn btn-secondary">Volver</a>
+{% endblock %}

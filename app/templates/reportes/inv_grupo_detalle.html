@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container">
+  <div class="card">
+    <h2>{{ nombre }}</h2>
+    <p style="font-size:12px;color:#666;">
+      ENTIDAD: 670 - Órgano Electoral Plurinacional &nbsp;|&nbsp;
+      UNIDAD: {{ unidad.codigo }} - {{ unidad.descripcion }} &nbsp;|&nbsp;
+      FECHA: {{ hoy.strftime('%d/%m/%Y') }} &nbsp;|&nbsp;
+      ÍNDICE UFV: {{ '%.5f'|format(ufv) }} Bs.
+    </p>
+  </div>
+
+  {% set groups = rows|groupby('grupo_nombre') %}
+  {% for grupo_nombre, items in groups %}
+  <div class="card" style="page-break-inside:avoid;">
+    <h3>GRUPO CONTABLE: {{ grupo_nombre }}</h3>
+    <div style="overflow-x:auto;">
+    <table style="font-size:10px;">
+      <thead>
+        <tr>
+          <th rowspan="2">UA</th>
+          <th rowspan="2">CÓDIGO</th>
+          <th rowspan="2">DESCRIPCIÓN</th>
+          <th colspan="2">FECHA</th>
+          <th rowspan="2">REV.<br>INC<br>ESP</th>
+          <th rowspan="2">INDICE<br>UFV</th>
+          <th rowspan="2">COSTO</th>
+          <th rowspan="2">COSTO ACTUAL<br>INICIAL</th>
+          <th rowspan="2">DEPREC.<br>ACUM.<br>INICIAL</th>
+          <th rowspan="2">RESID</th>
+          <th rowspan="2">FACT<br>ACT</th>
+          <th rowspan="2">COSTO NOM.<br>ACTUALIZ</th>
+          <th rowspan="2">%<br>DEPR</th>
+          <th rowspan="2">DIAS</th>
+          <th rowspan="2">DEPREC.<br>GESTIÓN<br>ACTUALIZ</th>
+          <th rowspan="2">DEPR.<br>ANUAL<br>CONSUM</th>
+          <th rowspan="2">HIST.<br>GESTIÓN</th>
+          <th rowspan="2">VIDA<br>ÚTIL</th>
+          <th rowspan="2">ACTUALIZ<br>DEPREC.</th>
+          <th rowspan="2">DEPREC.<br>ACTUALIZ</th>
+          <th rowspan="2">DEPREC.<br>ACUM.<br>TOTAL</th>
+          <th rowspan="2">VALOR<br>NETO</th>
+          <th rowspan="2">DAR<br>REVAL<br>o BAJA</th>
+        </tr>
+        <tr>
+          <th>HIST</th>
+          <th>MIGR</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in items %}
+        <tr>
+          <td>{{ r.codigo[:3] }}</td>
+          <td>{{ r.codigo }}</td>
+          <td style="max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.descripcion[:60] }}</td>
+          <td>{% if r.fecha_incorporacion %}{{ r.fecha_incorporacion.strftime('%d/%m/%Y') }}{% else %}00/00/0000{% endif %}</td>
+          <td>/</td>
+          <td>S</td>
+          <td>{{ '%.5f'|format(r.factor_ufv) }}</td>
+          <td>{{ fmt(r.costo) }}</td>
+          <td>{{ fmt(r.costo_actual_inicial) }}</td>
+          <td>{{ fmt(r.dep_acum_inicial) }}</td>
+          <td>{{ fmt(r.residual) }}</td>
+          <td>1.000000</td>
+          <td>{{ fmt(r.costo_actual_inicial) }}</td>
+          <td>{{ '%.2f'|format(r.porc_depr) }}</td>
+          <td>{{ r.dias }}</td>
+          <td>{{ fmt(r.dep_gestion) }}</td>
+          <td>{{ fmt(r.dep_anual) }}</td>
+          <td>{{ fmt(r.dep_gestion) }}</td>
+          <td>{{ r.vida_util }}</td>
+          <td>{{ fmt(r.actualizacion_gestion) }}</td>
+          <td>{{ fmt(r.dep_acum_total) }}</td>
+          <td>{{ fmt(r.dep_acum_total) }}</td>
+          <td>{{ fmt(r.valor_neto) }}</td>
+          <td>{% if r.revaluado %}REV{% else %}N{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        {% set g_cant = items|length %}
+        {% set g_costo = items|sum(attribute='costo') %}
+        {% set g_costo_act = items|sum(attribute='costo_actual_inicial') %}
+        {% set g_dep_acum = items|sum(attribute='dep_acum_inicial') %}
+        {% set g_valor_neto = items|sum(attribute='valor_neto') %}
+        <tr style="font-weight:bold;background:#f0f0f0;">
+          <td colspan="7">CANT: {{ g_cant }}</td>
+          <td>{{ fmt(g_costo) }}</td>
+          <td>{{ fmt(g_costo_act) }}</td>
+          <td>{{ fmt(g_dep_acum) }}</td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td>{{ fmt(g_valor_neto) }}</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+    </div>
+  </div>
+  {% endfor %}
+
+  <div class="card" style="text-align:right;font-size:11px;color:#666;">
+    SCAFMH 1.0 - Página 1 de 1
+  </div>
+</div>
+{% endblock %}

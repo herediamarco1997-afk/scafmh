@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-title">Reporte: {{ nombre }}</div>
+<div class="card">
+    <table>
+        <tr><th>Fecha</th><th>Activo</th><th>Tipo</th><th>Motivo</th><th>Disposición Legal</th></tr>
+        {% for b in data %}
+        <tr>
+            <td>{{ b.fecha }}</td>
+            <td>{{ b.activo.codigo if b.activo else '' }} - {{ b.activo.descripcion[:30] if b.activo else '' }}</td>
+            <td><span class="badge badge-danger">{{ b.tipo }}</span></td>
+            <td>{{ b.motivo[:50] }}</td>
+            <td>{{ b.disposicion_legal or '---' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" style="text-align:center; color:#999;">No hay registros de bajas</td></tr>
+        {% endfor %}
+    </table>
+</div>
+<a href="{{ url_for('reportes.listar') }}" class="btn btn-secondary">Volver a Reportes</a>
+{% endblock %}
