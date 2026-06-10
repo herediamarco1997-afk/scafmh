@@ -239,10 +239,11 @@ function volverAEscanear() {
   quaggaStop();
   var container = document.querySelector('#scanner-container');
   if (container) container.innerHTML = '';
-  document.getElementById('result-panel').classList.add('hidden');
-  document.getElementById('scanner-overlay').classList.remove('hidden');
-  document.getElementById('acciones-registro').classList.remove('hidden');
-  document.getElementById('confirmacion-guardado').classList.add('hidden');
+  var el;
+  el = document.getElementById('result-panel'); if (el) el.classList.add('hidden');
+  el = document.getElementById('scanner-overlay'); if (el) el.classList.remove('hidden');
+  el = document.getElementById('acciones-registro'); if (el) el.classList.remove('hidden');
+  el = document.getElementById('confirmacion-guardado'); if (el) el.classList.add('hidden');
   iniciarScanner();
 }
 
