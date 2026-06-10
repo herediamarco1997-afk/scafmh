@@ -101,13 +101,19 @@
     </div>
   </div>
 
-  <div class="action-bar" style="flex-wrap:wrap">
+  <div id="acciones-registro" class="action-bar" style="flex-wrap:wrap">
     <button class="btn btn-success" id="btn-verificado" style="padding:10px 20px;font-size:14px">✅ Verificado</button>
     <button class="btn btn-warning" id="btn-novedad" style="padding:10px 20px;font-size:14px">⚠️ Con Novedad</button>
     <button class="btn btn-danger" id="btn-no-encontrado" style="padding:10px 20px;font-size:14px">❌ No Encontrado</button>
     <button class="btn btn-secondary" id="btn-cancelar" style="padding:10px 20px">Cancelar</button>
   </div>
-  <p id="mensaje-guardado" style="text-align:center;font-size:14px;font-weight:bold;color:#4caf50;margin-top:10px"></p>
+  <div id="confirmacion-guardado" class="hidden" style="text-align:center;padding:20px">
+    <p id="msg-guardado" style="font-size:18px;font-weight:bold;color:#4caf50"></p>
+    <div style="margin-top:16px;display:flex;gap:12px;justify-content:center">
+      <button class="btn btn-primary" id="btn-volver-escanear" style="padding:10px 20px">📷 Volver a escanear</button>
+      <a href="{{ url_for('inventario.resultados') }}" class="btn btn-secondary" style="padding:10px 20px">📋 Ver resultados</a>
+    </div>
+  </div>
 </div>
 
 <link rel="manifest" href="/static/pwa/manifest.json">

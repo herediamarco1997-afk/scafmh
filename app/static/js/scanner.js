@@ -202,6 +202,8 @@ function mostrarDetalleActivo(activo) {
     document.getElementById('btn-registrar-barras').style.display = 'inline-block';
   }
 
+  document.getElementById('acciones-registro').classList.remove('hidden');
+  document.getElementById('confirmacion-guardado').classList.add('hidden');
   document.getElementById('foto-preview').classList.add('hidden');
   document.getElementById('foto-input').value = '';
   document.getElementById('observacion').value = '';
@@ -223,19 +225,16 @@ function registrarResultado(resultado) {
     nueva_oficina_id: nuevaOfId ? parseInt(nuevaOfId) : null,
     nuevo_responsable_id: nuevaRespId ? parseInt(nuevaRespId) : null,
   };
-  var msgEl = document.getElementById('mensaje-guardado');
-  if (msgEl) msgEl.textContent = 'Guardando...';
+  document.getElementById('acciones-registro').classList.add('hidden');
+  document.getElementById('confirmacion-guardado').classList.remove('hidden');
+  document.getElementById('msg-guardado').textContent = 'Guardando...';
   guardarResultado(data).then(async function() {
-    if (msgEl) msgEl.textContent = '\u2713 Guardado';
+    document.getElementById('msg-guardado').textContent = '\u2713 Guardado exitosamente';
     await actualizarPendientes();
-    setTimeout(function() {
-      volverAEscanear();
-      sincronizar();
-      if (msgEl) msgEl.textContent = '';
-    }, 800);
+    sincronizar();
   }).catch(function(e) {
     console.error('Error al guardar:', e);
-    if (msgEl) msgEl.textContent = 'Error al guardar';
+    document.getElementById('msg-guardado').textContent = 'Error al guardar';
   });
 }
 
@@ -319,6 +318,10 @@ function setupButtons() {
   document.getElementById('btn-no-encontrado').addEventListener('click', () => registrarResultado('NO_ENCONTRADO'));
   document.getElementById('btn-cancelar').addEventListener('click', volverAEscanear);
   document.getElementById('btn-registrar-barras').addEventListener('click', registrarCodigoBarras);
+  document.getElementById('btn-volver-escanear').addEventListener('click', volverAEscanear);
+  document.getElementById('btn-ver-resultados').addEventListener('click', function() {
+    window.location.href = '/inventario/resultados';
+  });
 }
 
 function setupOficinaFilter() {
