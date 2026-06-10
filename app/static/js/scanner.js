@@ -193,7 +193,8 @@ function mostrarDetalleActivo(activo) {
 }
 
 function registrarResultado(resultado) {
-  if (!currentDetalle) return;
+  if (!currentDetalle) { console.warn('registrarResultado: no currentDetalle'); return; }
+  console.log('registrarResultado:', resultado, currentDetalle.codigo);
   var ofId = document.getElementById('nueva-oficina').value;
   var respId = document.getElementById('nuevo-responsable').value;
   var estId = document.getElementById('nuevo-estado').value;
@@ -207,20 +208,29 @@ function registrarResultado(resultado) {
     nuevo_responsable_id: respId ? parseInt(respId) : null,
     nuevo_estado: estId || null,
   };
+  console.log('save data:', data);
+  var btn = document.getElementById('btn-verificado');
+  var originalText = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
   guardarResultadoServer(data).then(async function(r) {
-    alert('\u2713 ' + currentDetalle.codigo + ' guardado');
+    console.log('Server save OK:', r);
+    if (btn) btn.textContent = '\u2713 Guardado';
+    else alert('\u2713 ' + currentDetalle.codigo + ' guardado');
     await actualizarPendientes();
-    volverAEscanear();
+    setTimeout(function() { if (btn) { btn.disabled = false; btn.textContent = originalText; } volverAEscanear(); }, 1200);
   }).catch(function(e) {
     console.warn('Server save failed, trying IndexedDB:', e);
     guardarResultado(data).then(async function() {
-      alert('\u2713 ' + currentDetalle.codigo + ' guardado (offline)');
+      console.log('IndexedDB save OK');
+      if (btn) btn.textContent = '\u2713 Guardado (offline)';
+      else alert('\u2713 ' + currentDetalle.codigo + ' guardado');
       await actualizarPendientes();
       sincronizar();
-      volverAEscanear();
+      setTimeout(function() { if (btn) { btn.disabled = false; btn.textContent = originalText; } volverAEscanear(); }, 1200);
     }).catch(function(e2) {
       console.error('IndexedDB save also failed:', e2);
-      alert('Error al guardar. Verifica tu conexi\u00f3n.');
+      if (btn) btn.textContent = 'Error';
+      else alert('Error al guardar. Verifica tu conexi\u00f3n.');
     });
   });
 }

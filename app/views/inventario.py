@@ -197,6 +197,7 @@ def api_subir_resultados():
 @inventario_permitido
 def api_guardar_resultado():
     data = request.get_json(force=True)
+    print(f"[api_guardar] data={data}", flush=True)
     if not data:
         return jsonify({'error': 'sin datos'}), 400
     codigo = data.get('codigo', '').strip()
