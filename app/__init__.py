@@ -56,5 +56,12 @@ def create_app():
             admin = Usuario(username='admin', password=generate_password_hash('admin'), rol='ADMINISTRADOR')
             db.session.add(admin)
             db.session.commit()
+        # Migraciones de esquema
+        from sqlalchemy import inspect
+        insp = inspect(db.engine)
+        cols = [c['name'] for c in insp.get_columns('inventario_fisico')]
+        if 'nuevo_estado' not in cols:
+            db.session.execute(db.text('ALTER TABLE inventario_fisico ADD COLUMN nuevo_estado VARCHAR(10)'))
+            db.session.commit()
 
     return app
