@@ -194,6 +194,9 @@ function mostrarDetalleActivo(activo) {
 
 function registrarResultado(resultado) {
   if (!currentDetalle) return;
+  var btn = document.getElementById('btn-verificado');
+  if (btn && btn.disabled) return;
+  if (btn) btn.disabled = true;
   try {
     var ofId = document.getElementById('nueva-oficina');
     var respId = document.getElementById('nuevo-responsable');
@@ -209,20 +212,27 @@ function registrarResultado(resultado) {
       nueva_oficina_id: ofId && ofId.value ? parseInt(ofId.value) : null,
       nuevo_responsable_id: respId && respId.value ? parseInt(respId.value) : null,
       nuevo_estado: estId && estId.value ? estId.value : null,
+      fecha_toma: new Date().toISOString(),
     });
     var xhr = new XMLHttpRequest();
     xhr.open('POST', '/inventario/api/guardar', true);
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.withCredentials = true;
     xhr.onload = function() {
+      var btn2 = document.getElementById('btn-verificado');
       if (xhr.status === 200) {
         document.getElementById('ultimo-guardado').textContent = currentDetalle.codigo;
         volverAEscanear();
       } else {
+        if (btn2) btn2.disabled = false;
         try { var e = JSON.parse(xhr.responseText); alert('Error: ' + (e.error || xhr.status)); } catch(e2) { alert('Error ' + xhr.status); }
       }
     };
-    xhr.onerror = function() { alert('Error de conexi\u00f3n'); };
+    xhr.onerror = function() {
+      var btn2 = document.getElementById('btn-verificado');
+      if (btn2) btn2.disabled = false;
+      alert('Error de conexi\u00f3n');
+    };
     xhr.send(data);
   } catch (e) { alert('Error interno: ' + e.message); }
 }
