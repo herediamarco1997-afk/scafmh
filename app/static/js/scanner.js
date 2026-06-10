@@ -178,18 +178,18 @@ function mostrarDetalleActivo(activo) {
   document.getElementById('actual-responsable').textContent = activo.responsable || '-';
 
   // Reset selects
-  document.getElementById('nueva-oficina').value = '';
+  var el;
+  el = document.getElementById('nueva-oficina'); if (el) el.value = '';
   llenarSelectResponsables(null, null);
-  document.getElementById('nuevo-estado').value = '';
-  document.getElementById('detalle-estado-actual').textContent = activo.estado_bien || '-';
+  el = document.getElementById('nuevo-estado'); if (el) el.value = '';
+  el = document.getElementById('detalle-estado-actual'); if (el) el.textContent = activo.estado_bien || '-';
 
-  document.getElementById('scanner-overlay').classList.add('hidden');
-  document.getElementById('result-panel').classList.remove('hidden');
+  el = document.getElementById('scanner-overlay'); if (el) el.classList.add('hidden');
+  el = document.getElementById('result-panel'); if (el) el.classList.remove('hidden');
 
-  document.getElementById('foto-preview').classList.add('hidden');
-  document.getElementById('foto-input').value = '';
-  document.getElementById('observacion').value = '';
-  document.getElementById('ubicacion').value = '';
+  el = document.getElementById('foto-preview'); if (el) el.classList.add('hidden');
+  el = document.getElementById('foto-input'); if (el) el.value = '';
+  el = document.getElementById('observacion'); if (el) el.value = '';
 }
 
 function registrarResultado(resultado) {
