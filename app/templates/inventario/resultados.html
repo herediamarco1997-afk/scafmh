@@ -14,8 +14,8 @@
         <th>Resultado</th>
         <th>Estado</th>
         <th>Observaci&oacute;n</th>
-        <th>Ubicaci&oacute;n</th>
-        <th>Responsable</th>
+        <th>Oficina Anterior</th>
+        <th>Responsable Anterior</th>
         <th>Oficina Nueva</th>
         <th>Responsable Nuevo</th>
         <th>Foto</th>
@@ -36,12 +36,12 @@
           <span class="badge badge-danger">&#10007; No encontrado</span>
           {% endif %}
         </td>
-        <td>{{ r.nuevo_estado or r.activo.estado_bien if r.activo else '-' }}</td>
+        <td>{{ r.nuevo_estado or (r.activo.estado_bien if r.activo else '-') }}</td>
         <td>{{ r.observacion or '' }}</td>
-        <td>{{ r.ubicacion_reportada or '' }}</td>
-        <td>{{ r.responsable_reportado or '' }}</td>
-        <td>{% if r.oficina_nueva %}<span class="badge badge-info">{{ r.oficina_nueva }}</span>{% endif %}</td>
-        <td>{% if r.responsable_nuevo %}<span class="badge badge-info">{{ r.responsable_nuevo }}</span>{% endif %}</td>
+        <td>{{ r.activo.oficina_rel.nombre if r.activo and r.activo.oficina_rel else '-' }}</td>
+        <td>{{ r.activo.responsable_rel.nombre if r.activo and r.activo.responsable_rel else '-' }}</td>
+        <td>{% if r.oficina_nueva %}<span class="badge badge-info">{{ r.oficina_nueva.nombre }}</span>{% else %}—{% endif %}</td>
+        <td>{% if r.responsable_nuevo %}<span class="badge badge-info">{{ r.responsable_nuevo.nombre }}</span>{% else %}—{% endif %}</td>
         <td>{% if r.foto_url %}<a href="{{ r.foto_url }}" target="_blank" style="text-decoration:none">&#128247; Ver</a>{% endif %}</td>
         <td>{{ r.usuario or '-' }}</td>
         <td>{{ r.fecha_toma.strftime('%d/%m/%Y %H:%M') if r.fecha_toma else (r.fecha_sincronizacion.strftime('%d/%m/%Y %H:%M') if r.fecha_sincronizacion else '-') }}</td>
