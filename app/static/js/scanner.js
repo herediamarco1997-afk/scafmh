@@ -223,11 +223,20 @@ function registrarResultado(resultado) {
     nueva_oficina_id: nuevaOfId ? parseInt(nuevaOfId) : null,
     nuevo_responsable_id: nuevaRespId ? parseInt(nuevaRespId) : null,
   };
-  guardarResultado(data).then(async () => {
+  var msgEl = document.getElementById('mensaje-guardado');
+  if (msgEl) msgEl.textContent = 'Guardando...';
+  guardarResultado(data).then(async function() {
+    if (msgEl) msgEl.textContent = '\u2713 Guardado';
     await actualizarPendientes();
-    volverAEscanear();
-    sincronizar();
-  }).catch(function(e) { console.error('Error al guardar:', e); });
+    setTimeout(function() {
+      volverAEscanear();
+      sincronizar();
+      if (msgEl) msgEl.textContent = '';
+    }, 800);
+  }).catch(function(e) {
+    console.error('Error al guardar:', e);
+    if (msgEl) msgEl.textContent = 'Error al guardar';
+  });
 }
 
 async function registrarCodigoBarras() {
