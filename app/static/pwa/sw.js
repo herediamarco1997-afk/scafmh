@@ -1,4 +1,4 @@
-const CACHE_NAME = 'scafmh-inventario-v3';
+const CACHE_NAME = 'scafmh-inventario-v4';
 const PRECACHE_URLS = [
   '/inventario/api/estadisticas',
   '/static/pwa/manifest.json',
