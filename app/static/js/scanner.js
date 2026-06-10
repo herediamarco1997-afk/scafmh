@@ -203,27 +203,19 @@ function registrarResultado(resultado) {
     nueva_oficina_id: ofId ? parseInt(ofId) : null,
     nuevo_responsable_id: respId ? parseInt(respId) : null,
   };
-  var acciones = document.getElementById('acciones-registro');
-  var confirmacion = document.getElementById('confirmacion-guardado');
-  var msgEl = document.getElementById('msg-guardado');
-  if (acciones) acciones.classList.add('hidden');
-  if (confirmacion) confirmacion.classList.remove('hidden');
-  if (msgEl) msgEl.textContent = 'Guardando...';
   guardarResultadoServer(data).then(async function(r) {
-    if (msgEl) msgEl.textContent = '\u2713 Guardado exitosamente';
-    else alert('\u2713 Guardado exitosamente');
+    alert('\u2713 ' + currentDetalle.codigo + ' guardado');
     await actualizarPendientes();
+    volverAEscanear();
   }).catch(function(e) {
     console.warn('Server save failed, trying IndexedDB:', e);
     guardarResultado(data).then(async function() {
-      if (msgEl) msgEl.textContent = '\u2713 Guardado exitosamente (offline)';
-      else alert('\u2713 Guardado exitosamente');
+      alert('\u2713 ' + currentDetalle.codigo + ' guardado (offline)');
       await actualizarPendientes();
       sincronizar();
+      volverAEscanear();
     }).catch(function(e2) {
       console.error('IndexedDB save also failed:', e2);
-      if (msgEl) msgEl.textContent = 'Error al guardar';
-      if (acciones) acciones.classList.remove('hidden');
       alert('Error al guardar. Verifica tu conexi\u00f3n.');
     });
   });
