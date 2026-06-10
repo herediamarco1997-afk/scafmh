@@ -223,9 +223,10 @@ function registrarResultado(resultado) {
     nueva_oficina_id: nuevaOfId ? parseInt(nuevaOfId) : null,
     nuevo_responsable_id: nuevaRespId ? parseInt(nuevaRespId) : null,
   };
-  guardarResultado(data).then(() => {
-    actualizarPendientes();
+  guardarResultado(data).then(async () => {
+    await actualizarPendientes();
     volverAEscanear();
+    sincronizar();  // auto-sync en segundo plano
   });
 }
 
