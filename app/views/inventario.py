@@ -193,6 +193,50 @@ def api_subir_resultados():
     return jsonify({'created': created, 'errors': errors})
 
 
+@inventario_bp.route('/api/guardar', methods=['POST'])
+@inventario_permitido
+def api_guardar_resultado():
+    data = request.get_json(force=True)
+    if not data:
+        return jsonify({'error': 'sin datos'}), 400
+    codigo = data.get('codigo', '').strip()
+    if not codigo:
+        return jsonify({'error': 'codigo vacio'}), 400
+    activo = ActivoFijo.query.filter_by(codigo=codigo).first()
+    if not activo:
+        return jsonify({'error': 'activo no encontrado'}), 404
+    try:
+        nueva_oficina_id = data.get('nueva_oficina_id')
+        nuevo_responsable_id = data.get('nuevo_responsable_id')
+        if nueva_oficina_id and not db.session.get(Oficina, nueva_oficina_id):
+            nueva_oficina_id = None
+        if nuevo_responsable_id and not db.session.get(Responsable, nuevo_responsable_id):
+            nuevo_responsable_id = None
+        rec = InventarioFisico(
+            activo_id=activo.id,
+            codigo=codigo,
+            resultado=data.get('resultado', 'VERIFICADO'),
+            observacion=data.get('observacion', ''),
+            foto_url=data.get('foto_url', ''),
+            ubicacion_reportada=data.get('ubicacion', ''),
+            responsable_reportado=data.get('responsable', ''),
+            nueva_oficina_id=nueva_oficina_id,
+            nuevo_responsable_id=nuevo_responsable_id,
+            latitud=data.get('lat'),
+            longitud=data.get('lng'),
+            usuario=current_user.username,
+            dispositivo=data.get('dispositivo', ''),
+            fecha_sincronizacion=datetime.now(),
+            fecha_toma=datetime.fromisoformat(data['fecha_toma']) if data.get('fecha_toma') else datetime.now(),
+        )
+        db.session.add(rec)
+        db.session.commit()
+        return jsonify({'ok': True, 'id': rec.id})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
 @inventario_bp.route('/api/resultados', methods=['GET'])
 @inventario_permitido
 def api_resultados():
@@ -230,11 +274,10 @@ def api_subir_foto():
 
     try:
         cfg = current_app.config
-        cloudinary.config(
-            cloud_name=cfg.get('CLOUDINARY_CLOUD_NAME'),
-            api_key=cfg.get('CLOUDINARY_API_KEY'),
-            api_secret=cfg.get('CLOUDINARY_API_SECRET'),
-        )
+        if cfg.get('CLOUDINARY_URL'):
+            cloudinary.config(cloud_name=cfg.get('CLOUDINARY_CLOUD_NAME') or None,
+                              api_key=cfg.get('CLOUDINARY_API_KEY') or None,
+                              api_secret=cfg.get('CLOUDINARY_API_SECRET') or None)
         result = cloudinary.uploader.upload(
             file,
             folder='activos_fotos',

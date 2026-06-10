@@ -192,16 +192,16 @@ function mostrarDetalleActivo(activo) {
 
 function registrarResultado(resultado) {
   if (!currentDetalle) return;
-  var nuevaOfId = document.getElementById('nueva-oficina').value;
-  var nuevaRespId = document.getElementById('nuevo-responsable').value;
+  var ofId = document.getElementById('nueva-oficina').value;
+  var respId = document.getElementById('nuevo-responsable').value;
   var data = {
     codigo: currentDetalle.codigo,
     resultado: resultado,
     observacion: document.getElementById('observacion').value,
     foto_url: document.getElementById('foto-url-guardado').value || '',
     ubicacion: document.getElementById('ubicacion').value,
-    nueva_oficina_id: nuevaOfId ? parseInt(nuevaOfId) : null,
-    nuevo_responsable_id: nuevaRespId ? parseInt(nuevaRespId) : null,
+    nueva_oficina_id: ofId ? parseInt(ofId) : null,
+    nuevo_responsable_id: respId ? parseInt(respId) : null,
   };
   var acciones = document.getElementById('acciones-registro');
   var confirmacion = document.getElementById('confirmacion-guardado');
@@ -209,15 +209,36 @@ function registrarResultado(resultado) {
   if (acciones) acciones.classList.add('hidden');
   if (confirmacion) confirmacion.classList.remove('hidden');
   if (msgEl) msgEl.textContent = 'Guardando...';
-  guardarResultado(data).then(async function() {
+  guardarResultadoServer(data).then(async function(r) {
     if (msgEl) msgEl.textContent = '\u2713 Guardado exitosamente';
+    else alert('\u2713 Guardado exitosamente');
     await actualizarPendientes();
-    sincronizar();
   }).catch(function(e) {
-    console.error('Error al guardar:', e);
-    if (msgEl) msgEl.textContent = 'Error al guardar';
-    if (acciones) acciones.classList.remove('hidden');
+    console.warn('Server save failed, trying IndexedDB:', e);
+    guardarResultado(data).then(async function() {
+      if (msgEl) msgEl.textContent = '\u2713 Guardado exitosamente (offline)';
+      else alert('\u2713 Guardado exitosamente');
+      await actualizarPendientes();
+      sincronizar();
+    }).catch(function(e2) {
+      console.error('IndexedDB save also failed:', e2);
+      if (msgEl) msgEl.textContent = 'Error al guardar';
+      if (acciones) acciones.classList.remove('hidden');
+      alert('Error al guardar. Verifica tu conexi\u00f3n.');
+    });
   });
+}
+
+async function guardarResultadoServer(data) {
+  var r = await fetch('/inventario/api/guardar', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  var d = await r.json();
+  if (!r.ok) throw new Error(d.error || 'HTTP ' + r.status);
+  return d;
 }
 
 function volverAEscanear() {
