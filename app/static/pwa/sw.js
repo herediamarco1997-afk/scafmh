@@ -24,6 +24,9 @@ self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
 
+  // No interceptar POST/PUT/DELETE — solo GET puede cachearse
+  if (request.method !== 'GET') return;
+
   if (url.pathname.startsWith('/inventario/api/') && request.method === 'GET') {
     event.respondWith(networkFirst(request));
     return;
