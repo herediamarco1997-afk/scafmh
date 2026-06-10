@@ -102,6 +102,7 @@ class ActivoFijo(db.Model):
     costo_anterior = db.Column(db.Numeric(15, 2))
     vida_util_anterior = db.Column(db.Integer)
     fecha_anterior = db.Column(db.Date)
+    codigo_barras = db.Column(db.String(30), index=True)
     estado = db.Column(db.String(20), nullable=False, default='APROBADO')
     gestion_id = db.Column(db.Integer, db.ForeignKey('gestiones.id'), nullable=True)
     unidad_id = db.Column(db.Integer, db.ForeignKey('unidades_administrativas.id'), nullable=False)

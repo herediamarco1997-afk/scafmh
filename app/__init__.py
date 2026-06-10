@@ -51,6 +51,16 @@ def create_app():
 
     with app.app_context():
         db.create_all()
+        # Migrate: add codigo_barras if missing (SQLite)
+        try:
+            from sqlalchemy import inspect
+            inspector = inspect(db.engine)
+            cols = [c['name'] for c in inspector.get_columns('activos_fijos')]
+            if 'codigo_barras' not in cols:
+                db.session.execute(db.text('ALTER TABLE activos_fijos ADD COLUMN codigo_barras VARCHAR(30)'))
+                db.session.commit()
+        except Exception:
+            pass
         if not Usuario.query.filter_by(username='admin').first():
             from werkzeug.security import generate_password_hash
             admin = Usuario(username='admin', password=generate_password_hash('admin'), rol='ADMINISTRADOR')

@@ -6,6 +6,7 @@ import {
 let currentDetalle = null;
 let oficinasCache = [];
 let responsablesCache = [];
+let ultimoCodigoBarrasLeido = '';  // último código de barras escaneado no encontrado
 
 // Safe Quagga helpers (avoids 'Quagga is not defined' when CDN is slow)
 function quaggaDisponible() { return typeof Quagga !== 'undefined'; }
@@ -184,6 +185,23 @@ function mostrarDetalleActivo(activo) {
   document.getElementById('scanner-overlay').classList.add('hidden');
   document.getElementById('result-panel').classList.remove('hidden');
 
+  // Código de barras
+  const barrasInput = document.getElementById('codigo-barras-input');
+  const barrasStatus = document.getElementById('codigo-barras-status');
+  if (activo.codigo_barras) {
+    barrasInput.value = activo.codigo_barras;
+    barrasInput.disabled = true;
+    barrasStatus.textContent = '✓ Registrado';
+    barrasStatus.style.color = '#4caf50';
+    document.getElementById('btn-registrar-barras').style.display = 'none';
+  } else {
+    barrasInput.value = ultimoCodigoBarrasLeido || '';
+    barrasInput.disabled = false;
+    barrasStatus.textContent = ultimoCodigoBarrasLeido ? 'Pendiente de registrar' : '';
+    barrasStatus.style.color = '#ff9800';
+    document.getElementById('btn-registrar-barras').style.display = 'inline-block';
+  }
+
   document.getElementById('foto-preview').classList.add('hidden');
   document.getElementById('foto-input').value = '';
   document.getElementById('observacion').value = '';
@@ -211,8 +229,36 @@ function registrarResultado(resultado) {
   });
 }
 
+async function registrarCodigoBarras() {
+  if (!currentDetalle) return;
+  const input = document.getElementById('codigo-barras-input');
+  const codigoBarras = input.value.trim();
+  if (!codigoBarras) return;
+  try {
+    const r = await fetch(`/inventario/api/activos/${currentDetalle.id}/registrar-barras`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ codigo_barras: codigoBarras }),
+    });
+    const d = await r.json();
+    if (d.ok) {
+      currentDetalle.codigo_barras = codigoBarras;
+      input.disabled = true;
+      document.getElementById('codigo-barras-status').textContent = '✓ Registrado';
+      document.getElementById('codigo-barras-status').style.color = '#4caf50';
+      document.getElementById('btn-registrar-barras').style.display = 'none';
+    } else {
+      alert('Error: ' + (d.error || 'desconocido'));
+    }
+  } catch (e) {
+    alert('Error de conexión');
+  }
+}
+
 function volverAEscanear() {
   currentDetalle = null;
+  ultimoCodigoBarrasLeido = '';
   document.getElementById('result-panel').classList.add('hidden');
   document.getElementById('scanner-overlay').classList.remove('hidden');
   iniciarScanner();
@@ -258,6 +304,7 @@ function setupButtons() {
   document.getElementById('btn-novedad').addEventListener('click', () => registrarResultado('NOVEDAD'));
   document.getElementById('btn-no-encontrado').addEventListener('click', () => registrarResultado('NO_ENCONTRADO'));
   document.getElementById('btn-cancelar').addEventListener('click', volverAEscanear);
+  document.getElementById('btn-registrar-barras').addEventListener('click', registrarCodigoBarras);
 }
 
 function setupOficinaFilter() {
@@ -320,6 +367,7 @@ async function iniciarScanner() {
       quaggaStop();
       mostrarDetalleActivo(activo);
     } else {
+      ultimoCodigoBarrasLeido = code;
       document.getElementById('scanner-error').textContent = `Código no encontrado: ${code}`;
       setTimeout(() => {
         document.getElementById('scanner-error').textContent = '';

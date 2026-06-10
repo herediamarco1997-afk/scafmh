@@ -56,6 +56,18 @@
   </div>
 
   <div class="card">
+    <h2>Código de Barras</h2>
+    <p style="font-size:12px;color:#666;margin-bottom:8px">
+      Si escaneaste un código y no se encontró, puedes asignarlo a este activo:
+    </p>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <input id="codigo-barras-input" placeholder="Código leído por el escáner" style="flex:1;min-width:150px;padding:8px;border:1px solid #ccc;border-radius:4px;font-size:14px">
+      <button class="btn btn-primary" id="btn-registrar-barras" style="padding:8px 14px;font-size:13px">Registrar</button>
+      <span id="codigo-barras-status" style="font-size:12px"></span>
+    </div>
+  </div>
+
+  <div class="card">
     <h2>Cambiar Asignación (opcional)</h2>
     <p style="font-size:12px;color:#666;margin-bottom:12px">Si el activo cambió de oficina o responsable, selecciona los nuevos valores:</p>
     <div class="form-row">
