@@ -321,17 +321,17 @@ function setupOficinaFilter() {
 
 // ─── Scanner ────────────────────────────────────────────────────────────
 
-let scannerStream = null;
-let scannerLoop = null;
+var scannerStream = null;
+var scannerTimer = null;
 
 function detenerCamara() {
   if (scannerStream) {
     scannerStream.getTracks().forEach(function(t) { t.stop(); });
     scannerStream = null;
   }
-  if (scannerLoop) {
-    clearInterval(scannerLoop);
-    scannerLoop = null;
+  if (scannerTimer) {
+    clearTimeout(scannerTimer);
+    scannerTimer = null;
   }
 }
 
@@ -339,25 +339,33 @@ async function iniciarScanner() {
   var container = document.querySelector('#scanner-container');
   var errEl = document.getElementById('scanner-error');
   var lastReadEl = document.getElementById('ultimo-codigo');
+  if (!container) return;
 
+  // Intentar BarcodeDetector nativo (Chrome Android)
   if ('BarcodeDetector' in window) {
     try {
-      var formats = await BarcodeDetector.getSupportedFormats();
-      var detector = new BarcodeDetector({ formats: formats });
+      var detector = new BarcodeDetector({
+        formats: ['code_128', 'code_39', 'ean_13', 'ean_8', 'upc_a', 'upc_e', 'codabar', 'itf', 'qr_code', 'data_matrix', 'code_93', 'aztec', 'pdf417']
+      });
       var video = document.createElement('video');
       video.setAttribute('autoplay', '');
       video.setAttribute('playsinline', '');
+      video.setAttribute('muted', '');
       video.style.width = '100%';
+      video.style.height = 'auto';
+      video.style.display = 'block';
       container.innerHTML = '';
       container.appendChild(video);
       scannerStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: 640, height: 480 }
+        video: { facingMode: 'environment', width: {ideal: 640}, height: {ideal: 480} }
       });
       video.srcObject = scannerStream;
       await video.play();
       var lastCode = '';
+      errEl.textContent = 'Escaneando...';
+
       async function detectar() {
-        if (!video.videoWidth) { scannerLoop = setTimeout(detectar, 500); return; }
+        if (!scannerStream) return;
         try {
           var codes = await detector.detect(video);
           for (var i = 0; i < codes.length; i++) {
@@ -373,21 +381,23 @@ async function iniciarScanner() {
             } else {
               ultimoCodigoBarrasLeido = code;
               errEl.textContent = 'Codigo no encontrado: ' + code;
-              setTimeout(function() { errEl.textContent = ''; lastCode = ''; }, 4000);
+              setTimeout(function() { errEl.textContent = 'Escaneando...'; lastCode = ''; }, 4000);
             }
           }
-        } catch (e) {}
-        if (scannerStream) scannerLoop = setTimeout(detectar, 300);
+        } catch (e) {
+          // detector error - continue
+        }
+        if (scannerStream) scannerTimer = setTimeout(detectar, 200);
       }
-      scannerLoop = setTimeout(detectar, 500);
-      errEl.textContent = '';
+      scannerTimer = setTimeout(detectar, 500);
       return;
     } catch (e) {
       detenerCamara();
-      container.innerHTML = '';
+      container.innerHTML = '<div style="color:white;padding:20px;text-align:center">Error de c\u00e1mara</div>';
     }
   }
 
+  // Fallback Quagga
   if (!quaggaDisponible()) {
     setTimeout(iniciarScanner, 1000);
     return;
@@ -396,53 +406,39 @@ async function iniciarScanner() {
     inputStream: {
       name: 'Live',
       type: 'LiveStream',
-      target: document.querySelector('#scanner-container'),
+      target: container,
       constraints: { width: 640, height: 480, facingMode: 'environment' },
     },
     locator: { patchSize: 'large', halfSample: false },
     numOfWorkers: navigator.hardwareConcurrency || 2,
     frequency: 5,
     decoder: { readers: [
-      'code_128_reader',
-      'code_39_reader',
-      'code_39_vin_reader',
-      'code_93_reader',
-      'i2of5_reader',
-      'codabar_reader',
-      'ean_reader',
-      'ean_8_reader',
-      'upc_reader',
-      'upc_e_reader',
+      'code_128_reader', 'code_39_reader', 'code_39_vin_reader',
+      'code_93_reader', 'i2of5_reader', 'codabar_reader',
+      'ean_reader', 'ean_8_reader', 'upc_reader', 'upc_e_reader',
     ]},
     locate: true,
-  }, err => {
-    if (err) {
-      document.getElementById('scanner-error').textContent = 'Error al iniciar cámara: ' + err;
-      return;
-    }
+  }, function(err) {
+    if (err) { errEl.textContent = 'Error al iniciar c\u00e1mara: ' + err; return; }
     Quagga.start();
-    document.getElementById('scanner-error').textContent = '';
+    errEl.textContent = '';
   });
 
-  let lastCode = '';
-  const lastReadEl = document.getElementById('ultimo-codigo');
-  Quagga.onDetected(async data => {
+  var lastCode = '';
+  Quagga.onDetected(async function(data) {
     if (!data || !data.codeResult) return;
-    const code = data.codeResult.code;
+    var code = data.codeResult.code;
     if (!code || code.length < 3 || code === lastCode) return;
     lastCode = code;
     if (lastReadEl) lastReadEl.textContent = 'Leyendo: ' + code;
-    const activo = await buscarActivo(code);
+    var activo = await buscarActivo(code);
     if (activo) {
       quaggaStop();
       mostrarDetalleActivo(activo);
     } else {
       ultimoCodigoBarrasLeido = code;
-      document.getElementById('scanner-error').textContent = `Código no encontrado: ${code}`;
-      setTimeout(() => {
-        document.getElementById('scanner-error').textContent = '';
-        lastCode = '';
-      }, 4000);
+      errEl.textContent = 'Codigo no encontrado: ' + code;
+      setTimeout(function() { errEl.textContent = ''; lastCode = ''; }, 4000);
     }
   });
 }
