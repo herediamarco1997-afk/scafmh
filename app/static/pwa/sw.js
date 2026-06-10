@@ -1,6 +1,5 @@
-const CACHE_NAME = 'scafmh-inventario-v2';
+const CACHE_NAME = 'scafmh-inventario-v3';
 const PRECACHE_URLS = [
-  '/inventario/escanear',
   '/inventario/api/estadisticas',
   '/static/pwa/manifest.json',
 ];
@@ -30,11 +29,13 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  if (request.method === 'GET' && (
-    url.pathname.startsWith('/static/') ||
-    url.pathname === '/inventario/escanear'
-  )) {
+  if (request.method === 'GET' && url.pathname.startsWith('/static/')) {
     event.respondWith(cacheFirst(request));
+    return;
+  }
+
+  if (request.method === 'GET' && url.pathname.startsWith('/inventario/')) {
+    event.respondWith(networkFirst(request));
     return;
   }
 

@@ -203,16 +203,20 @@ function registrarResultado(resultado) {
     nueva_oficina_id: nuevaOfId ? parseInt(nuevaOfId) : null,
     nuevo_responsable_id: nuevaRespId ? parseInt(nuevaRespId) : null,
   };
-  document.getElementById('acciones-registro').classList.add('hidden');
-  document.getElementById('confirmacion-guardado').classList.remove('hidden');
-  document.getElementById('msg-guardado').textContent = 'Guardando...';
+  var acciones = document.getElementById('acciones-registro');
+  var confirmacion = document.getElementById('confirmacion-guardado');
+  var msgEl = document.getElementById('msg-guardado');
+  if (acciones) acciones.classList.add('hidden');
+  if (confirmacion) confirmacion.classList.remove('hidden');
+  if (msgEl) msgEl.textContent = 'Guardando...';
   guardarResultado(data).then(async function() {
-    document.getElementById('msg-guardado').textContent = '\u2713 Guardado exitosamente';
+    if (msgEl) msgEl.textContent = '\u2713 Guardado exitosamente';
     await actualizarPendientes();
     sincronizar();
   }).catch(function(e) {
     console.error('Error al guardar:', e);
-    document.getElementById('msg-guardado').textContent = 'Error al guardar';
+    if (msgEl) msgEl.textContent = 'Error al guardar';
+    if (acciones) acciones.classList.remove('hidden');
   });
 }
 
@@ -341,8 +345,10 @@ async function iniciarScanner() {
               mostrarDetalleActivo(activo);
               return;
             } else {
-              errEl.textContent = 'Codigo no encontrado: ' + code;
-              setTimeout(function() { errEl.textContent = 'Escaneando...'; lastCode = ''; }, 4000);
+              errEl.textContent = 'Leido: ' + code + ' — no registrado. Busca por c\u00f3digo de activo.';
+              var manualInput = document.getElementById('codigo-manual');
+              if (manualInput) { manualInput.value = code; manualInput.focus(); }
+              setTimeout(function() { errEl.textContent = 'Escaneando...'; lastCode = ''; }, 5000);
             }
           }
         } catch (e) {}
@@ -395,8 +401,10 @@ async function iniciarScanner() {
       quaggaStop();
       mostrarDetalleActivo(activo);
     } else {
-      errEl.textContent = 'Codigo no encontrado: ' + code;
-      setTimeout(function() { errEl.textContent = ''; lastCode = ''; }, 4000);
+      errEl.textContent = 'Leido: ' + code + ' — no registrado. Busca por c\u00f3digo de activo.';
+      var manualInput = document.getElementById('codigo-manual');
+      if (manualInput) { manualInput.value = code; manualInput.focus(); }
+      setTimeout(function() { errEl.textContent = ''; lastCode = ''; }, 5000);
     }
   });
 }
