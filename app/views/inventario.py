@@ -84,24 +84,14 @@ def api_activos():
 def api_activo_detail(codigo):
     a = ActivoFijo.query.filter(ActivoFijo.codigo == codigo).first()
     if not a:
-        try:
-            a = ActivoFijo.query.filter(ActivoFijo.codigo_barras == codigo).first()
-        except Exception:
-            pass  # columna codigo_barras aun no existe en esta BD
-    if not a:
         return jsonify({'error': 'Activo no encontrado'}), 404
     return jsonify(_serializar_activo(a))
 
 
 def _serializar_activo(a):
-    try:
-        cb = a.codigo_barras or ''
-    except Exception:
-        cb = ''
     return {
         'id': a.id,
         'codigo': a.codigo,
-        'codigo_barras': cb,
         'descripcion': a.descripcion,
         'fecha_incorporacion': a.fecha_incorporacion.isoformat() if a.fecha_incorporacion else None,
         'grupo': a.grupo.nombre if a.grupo else '',
@@ -148,24 +138,6 @@ def api_responsables():
         'carnet_identidad': r.carnet_identidad or '',
         'oficina_id': r.oficina_id,
     } for r in responsables])
-
-
-@inventario_bp.route('/api/activos/<int:activo_id>/registrar-barras', methods=['POST'])
-@inventario_permitido
-def api_registrar_barras(activo_id):
-    data = request.get_json(force=True)
-    codigo_barras = data.get('codigo_barras', '').strip()
-    if not codigo_barras:
-        return jsonify({'error': 'código de barras requerido'}), 400
-    existe = ActivoFijo.query.filter(ActivoFijo.codigo_barras == codigo_barras).first()
-    if existe:
-        return jsonify({'error': 'Ese código de barras ya está asignado a otro activo', 'activo': existe.codigo}), 409
-    a = db.session.get(ActivoFijo, activo_id)
-    if not a:
-        return jsonify({'error': 'Activo no encontrado'}), 404
-    a.codigo_barras = codigo_barras
-    db.session.commit()
-    return jsonify({'ok': True, 'codigo': a.codigo, 'codigo_barras': codigo_barras})
 
 
 @inventario_bp.route('/api/resultados', methods=['POST'])

@@ -1,12 +1,11 @@
 import {
   guardarResultado, getPendientes, marcarSincronizado, getConteoPendientes,
   cachearOficinas, getOficinas, cachearResponsables, getResponsables
-} from '/static/js/db.js?v=3';
+} from '/static/js/db.js?v=2';
 
 let currentDetalle = null;
 let oficinasCache = [];
 let responsablesCache = [];
-let ultimoCodigoBarrasLeido = '';  // último código de barras escaneado no encontrado
 
 // Safe Quagga helpers (avoids 'Quagga is not defined' when CDN is slow)
 function quaggaDisponible() { return typeof Quagga !== 'undefined'; }
@@ -185,25 +184,6 @@ function mostrarDetalleActivo(activo) {
   document.getElementById('scanner-overlay').classList.add('hidden');
   document.getElementById('result-panel').classList.remove('hidden');
 
-  // Código de barras
-  const barrasInput = document.getElementById('codigo-barras-input');
-  const barrasStatus = document.getElementById('codigo-barras-status');
-  if (activo.codigo_barras) {
-    barrasInput.value = activo.codigo_barras;
-    barrasInput.disabled = true;
-    barrasStatus.textContent = '✓ Registrado';
-    barrasStatus.style.color = '#4caf50';
-    document.getElementById('btn-registrar-barras').style.display = 'none';
-  } else {
-    barrasInput.value = ultimoCodigoBarrasLeido || '';
-    barrasInput.disabled = false;
-    barrasStatus.textContent = ultimoCodigoBarrasLeido ? 'Pendiente de registrar' : '';
-    barrasStatus.style.color = '#ff9800';
-    document.getElementById('btn-registrar-barras').style.display = 'inline-block';
-  }
-
-  document.getElementById('acciones-registro').classList.remove('hidden');
-  document.getElementById('confirmacion-guardado').classList.add('hidden');
   document.getElementById('foto-preview').classList.add('hidden');
   document.getElementById('foto-input').value = '';
   document.getElementById('observacion').value = '';
@@ -212,11 +192,9 @@ function mostrarDetalleActivo(activo) {
 
 function registrarResultado(resultado) {
   if (!currentDetalle) return;
-
-  const nuevaOfId = document.getElementById('nueva-oficina').value;
-  const nuevaRespId = document.getElementById('nuevo-responsable').value;
-
-  const data = {
+  var nuevaOfId = document.getElementById('nueva-oficina').value;
+  var nuevaRespId = document.getElementById('nuevo-responsable').value;
+  var data = {
     codigo: currentDetalle.codigo,
     resultado: resultado,
     observacion: document.getElementById('observacion').value,
@@ -238,42 +216,16 @@ function registrarResultado(resultado) {
   });
 }
 
-async function registrarCodigoBarras() {
-  if (!currentDetalle) return;
-  const input = document.getElementById('codigo-barras-input');
-  const codigoBarras = input.value.trim();
-  if (!codigoBarras) return;
-  try {
-    const r = await fetch(`/inventario/api/activos/${currentDetalle.id}/registrar-barras`, {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ codigo_barras: codigoBarras }),
-    });
-    const d = await r.json();
-    if (d.ok) {
-      currentDetalle.codigo_barras = codigoBarras;
-      input.disabled = true;
-      document.getElementById('codigo-barras-status').textContent = '✓ Registrado';
-      document.getElementById('codigo-barras-status').style.color = '#4caf50';
-      document.getElementById('btn-registrar-barras').style.display = 'none';
-    } else {
-      alert('Error: ' + (d.error || 'desconocido'));
-    }
-  } catch (e) {
-    alert('Error de conexión');
-  }
-}
-
 function volverAEscanear() {
   currentDetalle = null;
-  ultimoCodigoBarrasLeido = '';
   detenerCamara();
   quaggaStop();
   var container = document.querySelector('#scanner-container');
   if (container) container.innerHTML = '';
   document.getElementById('result-panel').classList.add('hidden');
   document.getElementById('scanner-overlay').classList.remove('hidden');
+  document.getElementById('acciones-registro').classList.remove('hidden');
+  document.getElementById('confirmacion-guardado').classList.add('hidden');
   iniciarScanner();
 }
 
@@ -317,11 +269,9 @@ function setupButtons() {
   document.getElementById('btn-novedad').addEventListener('click', () => registrarResultado('NOVEDAD'));
   document.getElementById('btn-no-encontrado').addEventListener('click', () => registrarResultado('NO_ENCONTRADO'));
   document.getElementById('btn-cancelar').addEventListener('click', volverAEscanear);
-  document.getElementById('btn-registrar-barras').addEventListener('click', registrarCodigoBarras);
-  document.getElementById('btn-volver-escanear').addEventListener('click', volverAEscanear);
-  document.getElementById('btn-ver-resultados').addEventListener('click', function() {
-    window.location.href = '/inventario/resultados';
-  });
+  var setBtnResultados = function(id, fn) { var el = document.getElementById(id); if (el) el.addEventListener('click', fn); };
+  setBtnResultados('btn-ver-resultados', function() { window.location.href = '/inventario/resultados'; });
+  setBtnResultados('btn-volver-escanear', volverAEscanear);
 }
 
 function setupOficinaFilter() {
@@ -354,18 +304,17 @@ async function iniciarScanner() {
   var lastReadEl = document.getElementById('ultimo-codigo');
   if (!container) return;
 
-  // Intentar BarcodeDetector nativo (Chrome Android)
+  // BarcodeDetector nativo de Chrome (mas preciso)
   if ('BarcodeDetector' in window) {
     try {
       var detector = new BarcodeDetector({
-        formats: ['code_128', 'code_39', 'ean_13', 'ean_8', 'upc_a', 'upc_e', 'codabar', 'itf', 'qr_code', 'data_matrix', 'code_93', 'aztec', 'pdf417']
+        formats: ['code_128', 'code_39', 'ean_13', 'ean_8', 'upc_a', 'upc_e', 'codabar', 'itf', 'qr_code', 'code_93']
       });
       var video = document.createElement('video');
       video.setAttribute('autoplay', '');
       video.setAttribute('playsinline', '');
       video.setAttribute('muted', '');
       video.style.width = '100%';
-      video.style.height = 'auto';
       video.style.display = 'block';
       container.innerHTML = '';
       container.appendChild(video);
@@ -392,21 +341,18 @@ async function iniciarScanner() {
               mostrarDetalleActivo(activo);
               return;
             } else {
-              ultimoCodigoBarrasLeido = code;
               errEl.textContent = 'Codigo no encontrado: ' + code;
               setTimeout(function() { errEl.textContent = 'Escaneando...'; lastCode = ''; }, 4000);
             }
           }
-        } catch (e) {
-          // detector error - continue
-        }
+        } catch (e) {}
         if (scannerStream) scannerTimer = setTimeout(detectar, 200);
       }
       scannerTimer = setTimeout(detectar, 500);
       return;
     } catch (e) {
       detenerCamara();
-      container.innerHTML = '<div style="color:white;padding:20px;text-align:center">Error de c\u00e1mara</div>';
+      container.innerHTML = '<div style="color:white;padding:40px;text-align:center">Error de camara</div>';
     }
   }
 
@@ -432,7 +378,7 @@ async function iniciarScanner() {
     ]},
     locate: true,
   }, function(err) {
-    if (err) { errEl.textContent = 'Error al iniciar c\u00e1mara: ' + err; return; }
+    if (err) { errEl.textContent = 'Error al iniciar camara: ' + err; return; }
     Quagga.start();
     errEl.textContent = '';
   });
@@ -449,7 +395,6 @@ async function iniciarScanner() {
       quaggaStop();
       mostrarDetalleActivo(activo);
     } else {
-      ultimoCodigoBarrasLeido = code;
       errEl.textContent = 'Codigo no encontrado: ' + code;
       setTimeout(function() { errEl.textContent = ''; lastCode = ''; }, 4000);
     }
@@ -467,12 +412,12 @@ function setupManualSearch() {
     try {
       const code = input.value.trim().toUpperCase();
       if (!code) {
-        error.textContent = 'Ingresa un código de activo';
+        error.textContent = 'Ingresa un c\u00f3digo de activo';
         error.style.display = 'block';
         return;
       }
       if (code.length < 3) {
-        error.textContent = 'El código debe tener al menos 3 caracteres';
+        error.textContent = 'El c\u00f3digo debe tener al menos 3 caracteres';
         error.style.display = 'block';
         return;
       }
@@ -489,7 +434,7 @@ function setupManualSearch() {
           mostrarDetalleActivo(activo);
           input.value = '';
         } else {
-          error.textContent = `No se encontró activo con código "${code}".`;
+          error.textContent = 'No se encontr\u00f3 activo con c\u00f3digo "' + code + '".';
           error.style.display = 'block';
         }
       }).catch(err => {
@@ -513,6 +458,7 @@ function setupManualSearch() {
     if (e.key === 'Enter') doSearch();
   });
 }
+
 
 // ─── Init ───────────────────────────────────────────────────────────────
 
