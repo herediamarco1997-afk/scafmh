@@ -274,10 +274,11 @@ def api_subir_foto():
 
     try:
         cfg = current_app.config
-        if cfg.get('CLOUDINARY_URL'):
-            cloudinary.config(cloud_name=cfg.get('CLOUDINARY_CLOUD_NAME') or None,
-                              api_key=cfg.get('CLOUDINARY_API_KEY') or None,
-                              api_secret=cfg.get('CLOUDINARY_API_SECRET') or None)
+        cloud_name = cfg.get('CLOUDINARY_CLOUD_NAME')
+        api_key = cfg.get('CLOUDINARY_API_KEY')
+        api_secret = cfg.get('CLOUDINARY_API_SECRET')
+        if cloud_name and api_key and api_secret:
+            cloudinary.config(cloud_name=cloud_name, api_key=api_key, api_secret=api_secret)
         result = cloudinary.uploader.upload(
             file,
             folder='activos_fotos',
