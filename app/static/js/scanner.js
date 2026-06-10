@@ -212,7 +212,7 @@ function registrarResultado(resultado) {
       nueva_oficina_id: ofId && ofId.value ? parseInt(ofId.value) : null,
       nuevo_responsable_id: respId && respId.value ? parseInt(respId.value) : null,
       nuevo_estado: estId && estId.value ? estId.value : null,
-      fecha_toma: new Date().toISOString(),
+      fecha_toma: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 19),
     });
     var xhr = new XMLHttpRequest();
     xhr.open('POST', '/inventario/api/guardar', true);
