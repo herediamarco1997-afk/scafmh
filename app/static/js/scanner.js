@@ -259,6 +259,10 @@ async function registrarCodigoBarras() {
 function volverAEscanear() {
   currentDetalle = null;
   ultimoCodigoBarrasLeido = '';
+  detenerCamara();
+  quaggaStop();
+  var container = document.querySelector('#scanner-container');
+  if (container) container.innerHTML = '';
   document.getElementById('result-panel').classList.add('hidden');
   document.getElementById('scanner-overlay').classList.remove('hidden');
   iniciarScanner();
@@ -317,7 +321,73 @@ function setupOficinaFilter() {
 
 // ─── Scanner ────────────────────────────────────────────────────────────
 
+let scannerStream = null;
+let scannerLoop = null;
+
+function detenerCamara() {
+  if (scannerStream) {
+    scannerStream.getTracks().forEach(function(t) { t.stop(); });
+    scannerStream = null;
+  }
+  if (scannerLoop) {
+    clearInterval(scannerLoop);
+    scannerLoop = null;
+  }
+}
+
 async function iniciarScanner() {
+  var container = document.querySelector('#scanner-container');
+  var errEl = document.getElementById('scanner-error');
+  var lastReadEl = document.getElementById('ultimo-codigo');
+
+  if ('BarcodeDetector' in window) {
+    try {
+      var formats = await BarcodeDetector.getSupportedFormats();
+      var detector = new BarcodeDetector({ formats: formats });
+      var video = document.createElement('video');
+      video.setAttribute('autoplay', '');
+      video.setAttribute('playsinline', '');
+      video.style.width = '100%';
+      container.innerHTML = '';
+      container.appendChild(video);
+      scannerStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: 640, height: 480 }
+      });
+      video.srcObject = scannerStream;
+      await video.play();
+      var lastCode = '';
+      async function detectar() {
+        if (!video.videoWidth) { scannerLoop = setTimeout(detectar, 500); return; }
+        try {
+          var codes = await detector.detect(video);
+          for (var i = 0; i < codes.length; i++) {
+            var code = codes[i].rawValue;
+            if (!code || code.length < 3 || code === lastCode) continue;
+            lastCode = code;
+            if (lastReadEl) lastReadEl.textContent = 'Leyendo: ' + code;
+            var activo = await buscarActivo(code);
+            if (activo) {
+              detenerCamara();
+              mostrarDetalleActivo(activo);
+              return;
+            } else {
+              ultimoCodigoBarrasLeido = code;
+              errEl.textContent = 'Codigo no encontrado: ' + code;
+              setTimeout(function() { errEl.textContent = ''; lastCode = ''; }, 4000);
+            }
+          }
+        } catch (e) {}
+        if (scannerStream) scannerLoop = setTimeout(detectar, 300);
+      }
+      scannerLoop = setTimeout(detectar, 500);
+      errEl.textContent = '';
+      return;
+    } catch (e) {
+      detenerCamara();
+      container.innerHTML = '';
+    }
+  }
+
   if (!quaggaDisponible()) {
     setTimeout(iniciarScanner, 1000);
     return;
@@ -405,6 +475,7 @@ function setupManualSearch() {
         btn.disabled = false;
         btn.textContent = 'Buscar';
         if (activo) {
+          detenerCamara();
           quaggaStop();
           mostrarDetalleActivo(activo);
           input.value = '';
