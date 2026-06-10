@@ -1,4 +1,4 @@
-const CACHE_NAME = 'scafmh-inventario-v1';
+const CACHE_NAME = 'scafmh-inventario-v2';
 const PRECACHE_URLS = [
   '/inventario/escanear',
   '/inventario/api/estadisticas',

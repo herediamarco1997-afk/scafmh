@@ -1,7 +1,7 @@
 import {
   guardarResultado, getPendientes, marcarSincronizado, getConteoPendientes,
   cachearOficinas, getOficinas, cachearResponsables, getResponsables
-} from '/static/js/db.js?v=2';
+} from '/static/js/db.js?v=3';
 
 let currentDetalle = null;
 let oficinasCache = [];
@@ -226,8 +226,8 @@ function registrarResultado(resultado) {
   guardarResultado(data).then(async () => {
     await actualizarPendientes();
     volverAEscanear();
-    sincronizar();  // auto-sync en segundo plano
-  });
+    sincronizar();
+  }).catch(function(e) { console.error('Error al guardar:', e); });
 }
 
 async function registrarCodigoBarras() {
