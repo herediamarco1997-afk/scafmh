@@ -3,6 +3,10 @@
 <div class="section-title">
   <a href="{{ url_for('inventario.lista') }}" style="font-size:14px;font-weight:normal">&larr; Volver al panel</a>
   — Escanear Activos
+  <span style="float:right;font-size:13px;font-weight:normal">
+    <a href="{{ url_for('inventario.resultados') }}">📋 Resultados</a>
+    | <span id="ultimo-guardado" style="color:#4caf50;font-weight:bold"></span>
+  </span>
 </div>
 
 <div id="scanner-overlay">

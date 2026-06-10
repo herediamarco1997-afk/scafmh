@@ -193,12 +193,11 @@ function mostrarDetalleActivo(activo) {
 }
 
 function registrarResultado(resultado) {
-  if (!currentDetalle) { console.warn('registrarResultado: no currentDetalle'); return; }
-  console.log('registrarResultado:', resultado, currentDetalle.codigo);
+  if (!currentDetalle) return;
   var ofId = document.getElementById('nueva-oficina').value;
   var respId = document.getElementById('nuevo-responsable').value;
   var estId = document.getElementById('nuevo-estado').value;
-  var data = {
+  var data = JSON.stringify({
     codigo: currentDetalle.codigo,
     resultado: resultado,
     observacion: document.getElementById('observacion').value,
@@ -207,44 +206,21 @@ function registrarResultado(resultado) {
     nueva_oficina_id: ofId ? parseInt(ofId) : null,
     nuevo_responsable_id: respId ? parseInt(respId) : null,
     nuevo_estado: estId || null,
+  });
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/inventario/api/guardar', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.withCredentials = true;
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      document.getElementById('ultimo-guardado').textContent = currentDetalle.codigo;
+      volverAEscanear();
+    } else {
+      try { var e = JSON.parse(xhr.responseText); alert('Error: ' + (e.error || xhr.status)); } catch(e2) { alert('Error ' + xhr.status); }
+    }
   };
-  console.log('save data:', data);
-  var btn = document.getElementById('btn-verificado');
-  var originalText = btn ? btn.textContent : '';
-  if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
-  guardarResultadoServer(data).then(async function(r) {
-    console.log('Server save OK:', r);
-    if (btn) btn.textContent = '\u2713 Guardado';
-    else alert('\u2713 ' + currentDetalle.codigo + ' guardado');
-    await actualizarPendientes();
-    setTimeout(function() { if (btn) { btn.disabled = false; btn.textContent = originalText; } volverAEscanear(); }, 1200);
-  }).catch(function(e) {
-    console.warn('Server save failed, trying IndexedDB:', e);
-    guardarResultado(data).then(async function() {
-      console.log('IndexedDB save OK');
-      if (btn) btn.textContent = '\u2713 Guardado (offline)';
-      else alert('\u2713 ' + currentDetalle.codigo + ' guardado');
-      await actualizarPendientes();
-      sincronizar();
-      setTimeout(function() { if (btn) { btn.disabled = false; btn.textContent = originalText; } volverAEscanear(); }, 1200);
-    }).catch(function(e2) {
-      console.error('IndexedDB save also failed:', e2);
-      if (btn) btn.textContent = 'Error';
-      else alert('Error al guardar. Verifica tu conexi\u00f3n.');
-    });
-  });
-}
-
-async function guardarResultadoServer(data) {
-  var r = await fetch('/inventario/api/guardar', {
-    method: 'POST',
-    credentials: 'same-origin',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  var d = await r.json();
-  if (!r.ok) throw new Error(d.error || 'HTTP ' + r.status);
-  return d;
+  xhr.onerror = function() { alert('Error de conexi\u00f3n'); };
+  xhr.send(data);
 }
 
 function volverAEscanear() {
