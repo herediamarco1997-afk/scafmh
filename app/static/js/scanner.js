@@ -282,16 +282,18 @@ async function iniciarScanner() {
       target: document.querySelector('#scanner-container'),
       constraints: { width: 640, height: 480, facingMode: 'environment' },
     },
-    locator: { patchSize: 'medium', halfSample: true },
-    numOfWorkers: 2,
-    frequency: 10,
+    locator: { patchSize: 'large', halfSample: false },
+    numOfWorkers: navigator.hardwareConcurrency || 2,
+    frequency: 5,
     decoder: { readers: [
       'code_128_reader',
-      'ean_reader',
-      'ean_8_reader',
       'code_39_reader',
       'code_39_vin_reader',
+      'code_93_reader',
+      'i2of5_reader',
       'codabar_reader',
+      'ean_reader',
+      'ean_8_reader',
       'upc_reader',
       'upc_e_reader',
     ]},
@@ -305,17 +307,24 @@ async function iniciarScanner() {
     document.getElementById('scanner-error').textContent = '';
   });
 
+  let lastCode = '';
+  const lastReadEl = document.getElementById('ultimo-codigo');
   Quagga.onDetected(async data => {
     if (!data || !data.codeResult) return;
     const code = data.codeResult.code;
-    if (!code || code.length < 3) return;
+    if (!code || code.length < 3 || code === lastCode) return;
+    lastCode = code;
+    if (lastReadEl) lastReadEl.textContent = 'Leyendo: ' + code;
     const activo = await buscarActivo(code);
     if (activo) {
       quaggaStop();
       mostrarDetalleActivo(activo);
     } else {
       document.getElementById('scanner-error').textContent = `Código no encontrado: ${code}`;
-      setTimeout(() => document.getElementById('scanner-error').textContent = '', 3000);
+      setTimeout(() => {
+        document.getElementById('scanner-error').textContent = '';
+        lastCode = '';
+      }, 4000);
     }
   });
 }
