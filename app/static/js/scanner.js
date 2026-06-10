@@ -194,34 +194,38 @@ function mostrarDetalleActivo(activo) {
 
 function registrarResultado(resultado) {
   if (!currentDetalle) return;
-  var ofId = document.getElementById('nueva-oficina').value;
-  var respId = document.getElementById('nuevo-responsable').value;
-  var estId = document.getElementById('nuevo-estado').value;
-  var data = JSON.stringify({
-    codigo: currentDetalle.codigo,
-    resultado: resultado,
-    observacion: document.getElementById('observacion').value,
-    foto_url: document.getElementById('foto-url-guardado').value || '',
-    ubicacion: document.getElementById('ubicacion').value,
-    nueva_oficina_id: ofId ? parseInt(ofId) : null,
-    nuevo_responsable_id: respId ? parseInt(respId) : null,
-    nuevo_estado: estId || null,
-  });
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/inventario/api/guardar', true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.withCredentials = true;
-  xhr.onload = function() {
-    if (xhr.status === 200) {
-      document.getElementById('ultimo-guardado').textContent = currentDetalle.codigo;
-      volverAEscanear();
-    } else {
-      try { var e = JSON.parse(xhr.responseText); alert('Error: ' + (e.error || xhr.status)); } catch(e2) { alert('Error ' + xhr.status); }
-    }
-  };
-  xhr.onerror = function() { alert('Error de conexi\u00f3n'); };
-  xhr.send(data);
+  try {
+    var ofId = document.getElementById('nueva-oficina').value;
+    var respId = document.getElementById('nuevo-responsable').value;
+    var estId = document.getElementById('nuevo-estado').value;
+    var data = JSON.stringify({
+      codigo: currentDetalle.codigo,
+      resultado: resultado,
+      observacion: document.getElementById('observacion').value,
+      foto_url: document.getElementById('foto-url-guardado').value || '',
+      ubicacion: document.getElementById('ubicacion').value,
+      nueva_oficina_id: ofId ? parseInt(ofId) : null,
+      nuevo_responsable_id: respId ? parseInt(respId) : null,
+      nuevo_estado: estId || null,
+    });
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/inventario/api/guardar', true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.withCredentials = true;
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        document.getElementById('ultimo-guardado').textContent = currentDetalle.codigo;
+        volverAEscanear();
+      } else {
+        try { var e = JSON.parse(xhr.responseText); alert('Error: ' + (e.error || xhr.status)); } catch(e2) { alert('Error ' + xhr.status); }
+      }
+    };
+    xhr.onerror = function() { alert('Error de conexi\u00f3n'); };
+    xhr.send(data);
+  } catch (e) { alert('Error interno: ' + e.message); }
 }
+
+window.registrarResultado = registrarResultado;
 
 function volverAEscanear() {
   currentDetalle = null;
@@ -236,6 +240,8 @@ function volverAEscanear() {
   el = document.getElementById('confirmacion-guardado'); if (el) el.classList.add('hidden');
   iniciarScanner();
 }
+
+window.volverAEscanear = volverAEscanear;
 
 // ─── Event listeners ────────────────────────────────────────────────────
 

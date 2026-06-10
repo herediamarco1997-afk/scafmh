@@ -108,10 +108,10 @@
   </div>
 
   <div id="acciones-registro" class="action-bar" style="flex-wrap:wrap">
-    <button class="btn btn-success" id="btn-verificado" style="padding:10px 20px;font-size:14px">✅ Verificado</button>
-    <button class="btn btn-warning" id="btn-novedad" style="padding:10px 20px;font-size:14px">⚠️ Con Novedad</button>
-    <button class="btn btn-danger" id="btn-no-encontrado" style="padding:10px 20px;font-size:14px">❌ No Encontrado</button>
-    <button class="btn btn-secondary" id="btn-cancelar" style="padding:10px 20px">Cancelar</button>
+    <button class="btn btn-success" id="btn-verificado" onclick="window.registrarResultado('VERIFICADO')" style="padding:10px 20px;font-size:14px">✅ Verificado</button>
+    <button class="btn btn-warning" id="btn-novedad" onclick="window.registrarResultado('NOVEDAD')" style="padding:10px 20px;font-size:14px">⚠️ Con Novedad</button>
+    <button class="btn btn-danger" id="btn-no-encontrado" onclick="window.registrarResultado('NO_ENCONTRADO')" style="padding:10px 20px;font-size:14px">❌ No Encontrado</button>
+    <button class="btn btn-secondary" id="btn-cancelar" onclick="window.volverAEscanear()" style="padding:10px 20px">Cancelar</button>
   </div>
   <div id="confirmacion-guardado" class="hidden" style="text-align:center;padding:20px">
     <p id="msg-guardado" style="font-size:18px;font-weight:bold;color:#4caf50"></p>
