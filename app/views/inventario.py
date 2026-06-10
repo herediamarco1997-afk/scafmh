@@ -212,6 +212,9 @@ def api_guardar_resultado():
             nueva_oficina_id = None
         if nuevo_responsable_id and not db.session.get(Responsable, nuevo_responsable_id):
             nuevo_responsable_id = None
+        nuevo_estado = data.get('nuevo_estado')
+        if nuevo_estado:
+            activo.estado_bien = nuevo_estado
         rec = InventarioFisico(
             activo_id=activo.id,
             codigo=codigo,
@@ -222,6 +225,7 @@ def api_guardar_resultado():
             responsable_reportado=data.get('responsable', ''),
             nueva_oficina_id=nueva_oficina_id,
             nuevo_responsable_id=nuevo_responsable_id,
+            nuevo_estado=nuevo_estado,
             latitud=data.get('lat'),
             longitud=data.get('lng'),
             usuario=current_user.username,

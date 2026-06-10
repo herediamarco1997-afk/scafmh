@@ -180,6 +180,8 @@ function mostrarDetalleActivo(activo) {
   // Reset selects
   document.getElementById('nueva-oficina').value = '';
   llenarSelectResponsables(null, null);
+  document.getElementById('nuevo-estado').value = '';
+  document.getElementById('detalle-estado-actual').textContent = activo.estado_bien || '-';
 
   document.getElementById('scanner-overlay').classList.add('hidden');
   document.getElementById('result-panel').classList.remove('hidden');
@@ -194,6 +196,7 @@ function registrarResultado(resultado) {
   if (!currentDetalle) return;
   var ofId = document.getElementById('nueva-oficina').value;
   var respId = document.getElementById('nuevo-responsable').value;
+  var estId = document.getElementById('nuevo-estado').value;
   var data = {
     codigo: currentDetalle.codigo,
     resultado: resultado,
@@ -202,6 +205,7 @@ function registrarResultado(resultado) {
     ubicacion: document.getElementById('ubicacion').value,
     nueva_oficina_id: ofId ? parseInt(ofId) : null,
     nuevo_responsable_id: respId ? parseInt(respId) : null,
+    nuevo_estado: estId || null,
   };
   guardarResultadoServer(data).then(async function(r) {
     alert('\u2713 ' + currentDetalle.codigo + ' guardado');

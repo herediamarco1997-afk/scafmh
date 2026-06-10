@@ -10,14 +10,16 @@
   <table>
     <thead>
       <tr>
-        <th>Código</th>
+        <th>C&oacute;digo</th>
         <th>Resultado</th>
-        <th>Observación</th>
-        <th>Ubicación</th>
+        <th>Estado</th>
+        <th>Observaci&oacute;n</th>
+        <th>Ubicaci&oacute;n</th>
         <th>Responsable</th>
         <th>Oficina Nueva</th>
         <th>Responsable Nuevo</th>
         <th>Foto</th>
+        <th>Registrado por</th>
         <th>Fecha</th>
       </tr>
     </thead>
@@ -27,23 +29,25 @@
         <td><strong>{{ r.codigo }}</strong></td>
         <td>
           {% if r.resultado == 'VERIFICADO' %}
-          <span class="badge badge-success">✅ Verificado</span>
+          <span class="badge badge-success">&#10003; Verificado</span>
           {% elif r.resultado == 'NOVEDAD' %}
-          <span class="badge badge-warning">⚠️ Novedad</span>
+          <span class="badge badge-warning">&#9888; Novedad</span>
           {% else %}
-          <span class="badge badge-danger">❌ No encontrado</span>
+          <span class="badge badge-danger">&#10007; No encontrado</span>
           {% endif %}
         </td>
+        <td>{{ r.nuevo_estado or r.activo.estado_bien if r.activo else '-' }}</td>
         <td>{{ r.observacion or '' }}</td>
         <td>{{ r.ubicacion_reportada or '' }}</td>
         <td>{{ r.responsable_reportado or '' }}</td>
         <td>{% if r.oficina_nueva %}<span class="badge badge-info">{{ r.oficina_nueva }}</span>{% endif %}</td>
         <td>{% if r.responsable_nuevo %}<span class="badge badge-info">{{ r.responsable_nuevo }}</span>{% endif %}</td>
-        <td>{% if r.foto_url %}<a href="{{ r.foto_url }}" target="_blank">📷 Ver</a>{% endif %}</td>
-        <td>{{ r.fecha_sincronizacion.strftime('%d/%m/%Y %H:%M') if r.fecha_sincronizacion else '' }}</td>
+        <td>{% if r.foto_url %}<a href="{{ r.foto_url }}" target="_blank" style="text-decoration:none">&#128247; Ver</a>{% endif %}</td>
+        <td>{{ r.usuario or '-' }}</td>
+        <td>{{ r.fecha_toma.strftime('%d/%m/%Y %H:%M') if r.fecha_toma else (r.fecha_sincronizacion.strftime('%d/%m/%Y %H:%M') if r.fecha_sincronizacion else '-') }}</td>
       </tr>
       {% else %}
-      <tr><td colspan="9" style="text-align:center;color:#999">Sin resultados aún</td></tr>
+      <tr><td colspan="11" style="text-align:center;color:#999">Sin resultados a&uacute;n</td></tr>
       {% endfor %}
     </tbody>
   </table>

@@ -56,8 +56,8 @@
   </div>
 
   <div class="card">
-    <h2>Cambiar Asignación (opcional)</h2>
-    <p style="font-size:12px;color:#666;margin-bottom:12px">Si el activo cambió de oficina o responsable, selecciona los nuevos valores:</p>
+    <h2>Cambiar Asignaci&oacute;n (opcional)</h2>
+    <p style="font-size:12px;color:#666;margin-bottom:12px">Si el activo cambi&oacute; de oficina o responsable, selecciona los nuevos valores:</p>
     <div class="form-row">
       <div class="form-group">
         <label>Nueva Oficina</label>
@@ -71,6 +71,20 @@
           <option value="">— Sin cambio —</option>
         </select>
       </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Estado del Bien</h2>
+    <div class="form-group">
+      <label>Estado actual: <span id="detalle-estado-actual" style="font-weight:bold">-</span></label>
+      <select id="nuevo-estado">
+        <option value="">— Sin cambio —</option>
+        <option value="BUENO">BUENO</option>
+        <option value="REGULAR">REGULAR</option>
+        <option value="MALO">MALO</option>
+        <option value="OBSOLETO">OBSOLETO</option>
+      </select>
     </div>
   </div>
 

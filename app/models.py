@@ -177,6 +177,7 @@ class InventarioFisico(db.Model):
     # Nuevos campos: cambio de oficina/responsable desde la app móvil
     nueva_oficina_id = db.Column(db.Integer, db.ForeignKey('oficinas.id'), nullable=True)
     nuevo_responsable_id = db.Column(db.Integer, db.ForeignKey('responsables.id'), nullable=True)
+    nuevo_estado = db.Column(db.String(10))
     latitud = db.Column(db.Float)
     longitud = db.Column(db.Float)
     usuario = db.Column(db.String(50))
