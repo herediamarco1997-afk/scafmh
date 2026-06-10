@@ -39,7 +39,7 @@
         <td>{{ r.responsable_reportado or '' }}</td>
         <td>{% if r.oficina_nueva %}<span class="badge badge-info">{{ r.oficina_nueva }}</span>{% endif %}</td>
         <td>{% if r.responsable_nuevo %}<span class="badge badge-info">{{ r.responsable_nuevo }}</span>{% endif %}</td>
-        <td>{% if r.foto_url %}<a href="{{ r.foto_url }}" target="_blank">📷 Ver</a>{% endif %}</td>
+        <td>{% if r.foto_url %}<a href="{{ r.foto_url }}" target="_blank"><img src="{{ r.foto_url }}" style="width:60px;height:60px;object-fit:cover;border-radius:4px;cursor:pointer" title="Click para ampliar"></a>{% endif %}</td>
         <td>{{ r.fecha_sincronizacion.strftime('%d/%m/%Y %H:%M') if r.fecha_sincronizacion else '' }}</td>
       </tr>
       {% else %}
