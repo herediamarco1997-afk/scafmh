@@ -216,25 +216,38 @@ def api_guardar_resultado():
         nuevo_estado = data.get('nuevo_estado')
         if nuevo_estado:
             activo.estado_bien = nuevo_estado
-        rec = InventarioFisico(
-            activo_id=activo.id,
-            codigo=codigo,
-            resultado=data.get('resultado', 'VERIFICADO'),
-            observacion=data.get('observacion', ''),
-            foto_url=data.get('foto_url', ''),
-            ubicacion_reportada=data.get('ubicacion', ''),
-            responsable_reportado=data.get('responsable', ''),
-            nueva_oficina_id=nueva_oficina_id,
-            nuevo_responsable_id=nuevo_responsable_id,
-            nuevo_estado=nuevo_estado,
-            latitud=data.get('lat'),
-            longitud=data.get('lng'),
-            usuario=current_user.username,
-            dispositivo=data.get('dispositivo', ''),
-            fecha_sincronizacion=datetime.now(),
-            fecha_toma=datetime.fromisoformat(data['fecha_toma']) if data.get('fecha_toma') else datetime.now(),
-        )
-        db.session.add(rec)
+        fecha_toma = datetime.fromisoformat(data['fecha_toma']) if data.get('fecha_toma') else datetime.now()
+        rec = InventarioFisico.query.filter_by(codigo=codigo).first()
+        if rec:
+            rec.resultado = data.get('resultado', 'VERIFICADO')
+            rec.observacion = data.get('observacion', '')
+            rec.foto_url = data.get('foto_url', '')
+            rec.nueva_oficina_id = nueva_oficina_id
+            rec.nuevo_responsable_id = nuevo_responsable_id
+            rec.nuevo_estado = nuevo_estado
+            rec.usuario = current_user.username
+            rec.fecha_toma = fecha_toma
+            rec.fecha_sincronizacion = datetime.now()
+        else:
+            rec = InventarioFisico(
+                activo_id=activo.id,
+                codigo=codigo,
+                resultado=data.get('resultado', 'VERIFICADO'),
+                observacion=data.get('observacion', ''),
+                foto_url=data.get('foto_url', ''),
+                ubicacion_reportada=data.get('ubicacion', ''),
+                responsable_reportado=data.get('responsable', ''),
+                nueva_oficina_id=nueva_oficina_id,
+                nuevo_responsable_id=nuevo_responsable_id,
+                nuevo_estado=nuevo_estado,
+                latitud=data.get('lat'),
+                longitud=data.get('lng'),
+                usuario=current_user.username,
+                dispositivo=data.get('dispositivo', ''),
+                fecha_sincronizacion=datetime.now(),
+                fecha_toma=fecha_toma,
+            )
+            db.session.add(rec)
         db.session.commit()
         return jsonify({'ok': True, 'id': rec.id})
     except Exception as e:
