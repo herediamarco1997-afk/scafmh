@@ -221,16 +221,52 @@ async function mostrarDetalleActivo(activo) {
   document.getElementById('detalle-estado-bien').textContent = activo.estado_bien || '-';
   document.getElementById('detalle-observaciones').textContent = activo.observaciones || '-';
 
+  // Advertencia si ya fue escaneado
+  var avisoEl = document.getElementById('aviso-escaneo-anterior');
+  if (avisoEl) avisoEl.remove();
+  if (activo.ya_escaneado && activo.ultimo_escaneo) {
+    var u = activo.ultimo_escaneo;
+    var aviso = document.createElement('div');
+    aviso.id = 'aviso-escaneo-anterior';
+    aviso.style.cssText = 'background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:10px 15px;margin-bottom:15px;font-size:13px;';
+    aviso.innerHTML = '<strong>Este activo ya fue escaneado</strong><br>' +
+      'Resultado: <strong>' + u.resultado + '</strong> | ' +
+      'Por: ' + (u.usuario || '-') + ' | ' +
+      'Fecha: ' + (u.fecha_toma || '-') + '<br>' +
+      (u.nueva_oficina ? 'Última asignación: <strong>' + u.nueva_oficina + ' → ' + (u.nuevo_responsable || '-') + '</strong>' : '') +
+      (u.nuevo_estado ? ' | Estado: <strong>' + u.nuevo_estado + '</strong>' : '') +
+      (u.observacion ? '<br>Observación: ' + u.observacion : '');
+    var resultPanel = document.getElementById('result-panel');
+    if (resultPanel) resultPanel.insertBefore(aviso, resultPanel.firstChild);
+  }
+
   // Asignación actual
   document.getElementById('actual-oficina').textContent = activo.oficina || '-';
   document.getElementById('actual-responsable').textContent = activo.responsable || '-';
 
-  // Reset selects
+  // Si ya fue escaneado, preseleccionar la última asignación
   var el;
-  el = document.getElementById('nueva-oficina'); if (el) el.value = '';
-  llenarSelectResponsables(null, null);
-  el = document.getElementById('nuevo-estado'); if (el) el.value = '';
-  el = document.getElementById('detalle-estado-actual'); if (el) el.textContent = activo.estado_bien || '-';
+  if (activo.ya_escaneado && activo.ultimo_escaneo) {
+    var u = activo.ultimo_escaneo;
+    el = document.getElementById('nueva-oficina');
+    if (el && u.nueva_oficina_id) {
+      el.value = u.nueva_oficina_id;
+      llenarSelectResponsables(u.nueva_oficina_id, u.nuevo_responsable_id);
+    } else {
+      el = document.getElementById('nueva-oficina'); if (el) el.value = '';
+      llenarSelectResponsables(null, null);
+    }
+    el = document.getElementById('nuevo-estado');
+    if (el && u.nuevo_estado) el.value = u.nuevo_estado;
+    else { el = document.getElementById('nuevo-estado'); if (el) el.value = ''; }
+    el = document.getElementById('detalle-estado-actual');
+    if (el) el.textContent = u.nuevo_estado || activo.estado_bien || '-';
+  } else {
+    el = document.getElementById('nueva-oficina'); if (el) el.value = '';
+    llenarSelectResponsables(null, null);
+    el = document.getElementById('nuevo-estado'); if (el) el.value = '';
+    el = document.getElementById('detalle-estado-actual'); if (el) el.textContent = activo.estado_bien || '-';
+  }
 
   el = document.getElementById('scanner-overlay'); if (el) el.classList.add('hidden');
   el = document.getElementById('result-panel'); if (el) el.classList.remove('hidden');

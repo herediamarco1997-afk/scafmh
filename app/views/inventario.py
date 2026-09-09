@@ -89,7 +89,7 @@ def api_activo_detail(codigo):
 
 
 def _serializar_activo(a):
-    return {
+    data = {
         'id': a.id,
         'codigo': a.codigo,
         'descripcion': a.descripcion,
@@ -107,7 +107,25 @@ def _serializar_activo(a):
         'responsable_ci': a.responsable_rel.carnet_identidad if a.responsable_rel else '',
         'vida_util': a.vida_util or 0,
         'observaciones': a.observaciones or '',
+        'ya_escaneado': False,
+        'ultimo_escaneo': None,
     }
+    ultimo = InventarioFisico.query.filter_by(codigo=a.codigo).order_by(InventarioFisico.id.desc()).first()
+    if ultimo:
+        data['ya_escaneado'] = True
+        data['ultimo_escaneo'] = {
+            'resultado': ultimo.resultado,
+            'observacion': ultimo.observacion or '',
+            'foto_url': ultimo.foto_url or '',
+            'nueva_oficina_id': ultimo.nueva_oficina_id,
+            'nueva_oficina': ultimo.oficina_nueva.nombre if ultimo.oficina_nueva else '',
+            'nuevo_responsable_id': ultimo.nuevo_responsable_id,
+            'nuevo_responsable': ultimo.responsable_nuevo.nombre if ultimo.responsable_nuevo else '',
+            'nuevo_estado': ultimo.nuevo_estado or '',
+            'fecha_toma': ultimo.fecha_toma.isoformat() if ultimo.fecha_toma else '',
+            'usuario': ultimo.usuario or '',
+        }
+    return data
 
 
 @inventario_bp.route('/api/oficinas')
