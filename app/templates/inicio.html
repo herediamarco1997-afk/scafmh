@@ -2,9 +2,9 @@
 {% block content %}
 <div class="section-title">Menú Principal</div>
 
-{% if not session.get('unidad_actual_id') %}
+{% if not session.get('unidad_actual_id') and not session.get('mostrar_todas') %}
 <div class="alert alert-info">
-    <strong>Seleccione una Unidad Administrativa</strong> para comenzar a trabajar.
+    <strong>Seleccione una Unidad Administrativa</strong> o haga clic en <strong>"Ver Todas"</strong> para comenzar a trabajar.
 </div>
 <div class="card">
     <h2>Unidades Administrativas Disponibles</h2>
@@ -24,6 +24,15 @@
             </td>
         </tr>
         {% endfor %}
+        <tr>
+            <td colspan="3" style="text-align:right; font-weight:bold;">TODAS LAS UNIDADES</td>
+            <td>
+                <form method="POST" action="{{ url_for('main.seleccionar_unidad') }}">
+                    <input type="hidden" name="unidad_id" value="0">
+                    <button type="submit" class="btn btn-primary btn-sm">Ver Todas</button>
+                </form>
+            </td>
+        </tr>
     </table>
     {% else %}
     <p style="color:#666;">No hay unidades registradas. <a href="{{ url_for('unidades.nuevo') }}">Crear una unidad</a></p>

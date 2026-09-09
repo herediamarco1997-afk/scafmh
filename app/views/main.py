@@ -68,7 +68,11 @@ def cambiar_password():
 @login_required
 def seleccionar_unidad():
     unidad_id = request.form.get('unidad_id')
-    if unidad_id:
-        from flask import session
+    from flask import session
+    if unidad_id == '0':
+        session.pop('unidad_actual_id', None)
+        session['mostrar_todas'] = True
+    elif unidad_id:
         session['unidad_actual_id'] = int(unidad_id)
+        session.pop('mostrar_todas', None)
     return redirect(url_for('main.inicio'))

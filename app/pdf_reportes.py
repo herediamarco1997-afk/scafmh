@@ -85,16 +85,15 @@ class PDFReport(FPDF):
         self.set_font(self.font_name, 'B', font_size)
         headers = ['GRUPO', 'CANT', 'COSTO HISTORICO', 'COSTO ACTUAL', 'DEP. ACUM.',
                    'DEP. GESTION', 'VALOR NETO', '%PART']
-        cw = [35, 10, 28, 30, 28, 28, 30, 12]
+        cw = [50, 12, 30, 32, 28, 28, 32, 14]
         for i, h in enumerate(headers):
             self.cell(cw[i], 7, h, 1, 0, 'C')
         self.ln()
         self.set_font(self.font_name, '', font_size)
-        # data is an OrderedDict: group_name -> {grupo, cantidad, costo_historico, ...}
         total_valor = total.get('valor_neto', 1) or 1
         for gdict in data.values():
             pct = (gdict['valor_neto'] / total_valor * 100) if total_valor else 0
-            vals = [gdict['grupo'][:35], str(gdict['cantidad']),
+            vals = [gdict['grupo'][:48], str(gdict['cantidad']),
                     gdict['costo_historico'], gdict['costo_actual_inicial'],
                     gdict['dep_acum_inicial'], gdict['dep_gestion'],
                     gdict['valor_neto'], round(pct, 1)]

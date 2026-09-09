@@ -1,18 +1,61 @@
 import {
   guardarResultado, getPendientes, marcarSincronizado, getConteoPendientes,
-  cachearOficinas, getOficinas, cachearResponsables, getResponsables
-} from '/static/js/db.js?v=2';
+  cachearOficinas, getOficinas, cachearResponsables, getResponsables,
+  existeCodigo, getFotosPendientes, actualizarFotoUrl
+} from '/static/js/db.js?v=3';
 
 let currentDetalle = null;
 let oficinasCache = [];
 let responsablesCache = [];
+let currentGPS = null;
 
 // Safe Quagga helpers (avoids 'Quagga is not defined' when CDN is slow)
 function quaggaDisponible() { return typeof Quagga !== 'undefined'; }
 
 function quaggaStop() { try { if (quaggaDisponible()) Quagga.stop(); } catch(e) { /* ignore */ } }
 
+// ─── GPS ────────────────────────────────────────────────────────────────
+
+function capturarGPS() {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve(null);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        currentGPS = {
+          lat: Math.round(pos.coords.latitude * 1e7) / 1e7,
+          lng: Math.round(pos.coords.longitude * 1e7) / 1e7,
+        };
+        resolve(currentGPS);
+      },
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 }
+    );
+  });
+}
+
 // ─── Sincronización ────────────────────────────────────────────────────
+
+async function subirFotosOffline(pendientes) {
+  for (const p of pendientes) {
+    if (!p.foto_base64) continue;
+    try {
+      const formData = new FormData();
+      const blob = await (await fetch(p.foto_base64)).blob();
+      formData.append('foto', blob, `${p.codigo}.jpg`);
+      const r = await fetch('/inventario/api/foto', { method: 'POST', body: formData });
+      const d = await r.json();
+      if (d.url) {
+        await actualizarFotoUrl(p.id, d.url);
+        p.foto_url = d.url;
+      }
+    } catch (e) {
+      console.warn('Error subiendo foto offline:', p.codigo, e);
+    }
+  }
+}
 
 async function sincronizar() {
   const btn = document.getElementById('btn-sync');
@@ -27,6 +70,10 @@ async function sincronizar() {
     return;
   }
 
+  // 1. Subir fotos pendientes primero
+  await subirFotosOffline(pendientes);
+
+  // 2. Subir resultados
   try {
     const r = await fetch('/inventario/api/resultados', {
       method: 'POST',
@@ -37,10 +84,11 @@ async function sincronizar() {
         resultado: p.resultado,
         observacion: p.observacion,
         foto_url: p.foto_url || '',
-        ubicacion: p.ubicacion || '',
+        ubicacion: '',
         responsable: p.responsable_text || '',
         nueva_oficina_id: p.nueva_oficina_id || null,
         nuevo_responsable_id: p.nuevo_responsable_id || null,
+        nuevo_estado: p.nuevo_estado || null,
         lat: p.lat,
         lng: p.lng,
         fecha_toma: p.fecha_toma,
@@ -159,7 +207,7 @@ async function buscarActivo(codigo) {
 
 // ─── Mostrar detalle del activo ─────────────────────────────────────────
 
-function mostrarDetalleActivo(activo) {
+async function mostrarDetalleActivo(activo) {
   currentDetalle = activo;
 
   document.getElementById('detalle-codigo').textContent = activo.codigo;
@@ -190,57 +238,132 @@ function mostrarDetalleActivo(activo) {
   el = document.getElementById('foto-preview'); if (el) el.classList.add('hidden');
   el = document.getElementById('foto-input'); if (el) el.value = '';
   el = document.getElementById('observacion'); if (el) el.value = '';
+  el = document.getElementById('foto-url-guardado'); if (el) el.value = '';
+
+  // Capturar GPS en background
+  capturarGPS();
 }
 
-function registrarResultado(resultado) {
+// ─── Registro de resultado ──────────────────────────────────────────────
+
+const RESULTADOS_VALIDOS = ['VERIFICADO', 'NOVEDAD', 'NO_ENCONTRADO'];
+
+async function registrarResultado(resultado) {
   if (!currentDetalle) return;
+
+  // Validar resultado
+  if (!RESULTADOS_VALIDOS.includes(resultado)) {
+    alert('Resultado inválido: ' + resultado);
+    return;
+  }
+
   var btn = document.getElementById('btn-verificado');
   if (btn && btn.disabled) return;
   if (btn) btn.disabled = true;
+
   try {
+    // Verificar duplicado
+    const duplicado = await existeCodigo(currentDetalle.codigo);
+    if (duplicado) {
+      if (!confirm(`El activo ${currentDetalle.codigo} ya fue escaneado. ¿Deseas registrarlo de todas formas?`)) {
+        if (btn) btn.disabled = false;
+        return;
+      }
+    }
+
     var ofId = document.getElementById('nueva-oficina');
     var respId = document.getElementById('nuevo-responsable');
     var estId = document.getElementById('nuevo-estado');
     var obsEl = document.getElementById('observacion');
     var fotoEl = document.getElementById('foto-url-guardado');
-    var data = JSON.stringify({
+
+    // Obtener foto como Base64 si existe (para offline)
+    let fotoBase64 = null;
+    let fotoUrl = fotoEl ? fotoEl.value : '';
+
+    const preview = document.getElementById('foto-preview');
+    if (preview && preview.src && !preview.classList.contains('hidden') && !fotoUrl) {
+      // La foto está como preview pero no se subió (offline)
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = preview.naturalWidth;
+        canvas.height = preview.naturalHeight;
+        canvas.getContext('2d').drawImage(preview, 0, 0);
+        fotoBase64 = canvas.toDataURL('image/jpeg', 0.7);
+      } catch (e) { /* no se pudo convertir */ }
+    }
+
+    var registro = {
       codigo: currentDetalle.codigo,
       resultado: resultado,
       observacion: obsEl ? obsEl.value : '',
-      foto_url: fotoEl ? fotoEl.value : '',
+      foto_url: fotoUrl,
+      foto_base64: fotoBase64,
       ubicacion: '',
       nueva_oficina_id: ofId && ofId.value ? parseInt(ofId.value) : null,
       nuevo_responsable_id: respId && respId.value ? parseInt(respId.value) : null,
       nuevo_estado: estId && estId.value ? estId.value : null,
-      fecha_toma: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 19),
-    });
-    var xhr = new XMLHttpRequest();
-    xhr.open('POST', '/inventario/api/guardar', true);
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    xhr.withCredentials = true;
-    xhr.onload = function() {
-      var btn2 = document.getElementById('btn-verificado');
-      if (xhr.status === 200) {
+      lat: currentGPS ? currentGPS.lat : null,
+      lng: currentGPS ? currentGPS.lng : null,
+      responsable_text: '',
+    };
+
+    // Intentar enviar al servidor primero
+    let enviado = false;
+    try {
+      const r = await fetch('/inventario/api/guardar', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          codigo: registro.codigo,
+          resultado: registro.resultado,
+          observacion: registro.observacion,
+          foto_url: registro.foto_url,
+          ubicacion: registro.ubicacion,
+          nueva_oficina_id: registro.nueva_oficina_id,
+          nuevo_responsable_id: registro.nuevo_responsable_id,
+          nuevo_estado: registro.nuevo_estado,
+          lat: registro.lat,
+          lng: registro.lng,
+          fecha_toma: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 19),
+        }),
+      });
+      if (r.ok) {
+        enviado = true;
         document.getElementById('ultimo-guardado').textContent = currentDetalle.codigo;
-        volverAEscanear();
-      } else {
-        if (btn2) btn2.disabled = false;
-        try { var e = JSON.parse(xhr.responseText); alert('Error: ' + (e.error || xhr.status)); } catch(e2) { alert('Error ' + xhr.status); }
+        await actualizarEstadisticas();
+        mostrarConfirmacion(currentDetalle.codigo);
       }
-    };
-    xhr.onerror = function() {
-      var btn2 = document.getElementById('btn-verificado');
-      if (btn2) btn2.disabled = false;
-      alert('Error de conexi\u00f3n');
-    };
-    xhr.send(data);
-  } catch (e) { alert('Error interno: ' + e.message); }
+    } catch (e) {
+      // Offline — guardar en IndexedDB
+    }
+
+    if (!enviado) {
+      // Guardar en IndexedDB para sincronizar después
+      await guardarResultado(registro);
+      await actualizarPendientes();
+      document.getElementById('ultimo-guardado').textContent = currentDetalle.codigo + ' (pendiente)';
+      mostrarConfirmacion(currentDetalle.codigo);
+    }
+
+  } catch (e) {
+    alert('Error interno: ' + e.message);
+    if (btn) btn.disabled = false;
+  }
+}
+
+function mostrarConfirmacion(codigo) {
+  var el;
+  el = document.getElementById('acciones-registro'); if (el) el.classList.add('hidden');
+  el = document.getElementById('confirmacion-guardado'); if (el) el.classList.remove('hidden');
 }
 
 window.registrarResultado = registrarResultado;
 
 function volverAEscanear() {
   currentDetalle = null;
+  currentGPS = null;
   detenerCamara();
   quaggaStop();
   var container = document.querySelector('#scanner-container');
@@ -250,6 +373,7 @@ function volverAEscanear() {
   el = document.getElementById('scanner-overlay'); if (el) el.classList.remove('hidden');
   el = document.getElementById('acciones-registro'); if (el) el.classList.remove('hidden');
   el = document.getElementById('confirmacion-guardado'); if (el) el.classList.add('hidden');
+  var btn = document.getElementById('btn-verificado'); if (btn) btn.disabled = false;
   iniciarScanner();
 }
 
@@ -272,19 +396,28 @@ function setupFoto() {
     input.addEventListener('change', async e => {
       const file = e.target.files[0];
       if (!file) return;
+
+      // Mostrar preview inmediatamente
+      const preview = document.getElementById('foto-preview');
+      const reader = new FileReader();
+      reader.onload = () => {
+        preview.src = reader.result;
+        preview.classList.remove('hidden');
+      };
+      reader.readAsDataURL(file);
+
+      // Intentar subir a Cloudinary
       const formData = new FormData();
       formData.append('foto', file);
       try {
         const r = await fetch('/inventario/api/foto', { method: 'POST', body: formData });
         const d = await r.json();
         if (d.url) {
-          const preview = document.getElementById('foto-preview');
-          preview.src = d.url;
-          preview.classList.remove('hidden');
           document.getElementById('foto-url-guardado').value = d.url;
         }
       } catch (e) {
-        alert('Error al subir foto (puedes intentar después con sync)');
+        // Offline — la foto queda como preview, se sincronizará después
+        console.warn('Foto no subida (offline), se guardará localmente');
       }
     });
   }
@@ -305,6 +438,17 @@ function setupOficinaFilter() {
   selOf.addEventListener('change', () => {
     const ofId = selOf.value;
     llenarSelectResponsables(ofId ? parseInt(ofId) : null, null);
+  });
+}
+
+// ─── Sincronización automática al recuperar conexión ────────────────────
+
+function setupAutoSync() {
+  window.addEventListener('online', async () => {
+    const pendientes = await getConteoPendientes();
+    if (pendientes > 0) {
+      sincronizar();
+    }
   });
 }
 
@@ -364,7 +508,7 @@ async function iniciarScanner() {
             var activo = await buscarActivo(code);
             if (activo) {
               detenerCamara();
-              mostrarDetalleActivo(activo);
+              await mostrarDetalleActivo(activo);
               return;
             } else {
               errEl.textContent = 'Leido: ' + code + ' — no registrado. Busca por c\u00f3digo de activo.';
@@ -421,7 +565,7 @@ async function iniciarScanner() {
     var activo = await buscarActivo(code);
     if (activo) {
       quaggaStop();
-      mostrarDetalleActivo(activo);
+      await mostrarDetalleActivo(activo);
     } else {
       errEl.textContent = 'Leido: ' + code + ' — no registrado. Busca por c\u00f3digo de activo.';
       var manualInput = document.getElementById('codigo-manual');
@@ -455,13 +599,13 @@ function setupManualSearch() {
       btn.disabled = true;
       btn.textContent = 'Buscando...';
 
-      buscarActivo(code).then(activo => {
+      buscarActivo(code).then(async activo => {
         btn.disabled = false;
         btn.textContent = 'Buscar';
         if (activo) {
           detenerCamara();
           quaggaStop();
-          mostrarDetalleActivo(activo);
+          await mostrarDetalleActivo(activo);
           input.value = '';
         } else {
           error.textContent = 'No se encontr\u00f3 activo con c\u00f3digo "' + code + '".';
@@ -498,6 +642,8 @@ document.addEventListener('DOMContentLoaded', () => {
   setupButtons();
   setupOficinaFilter();
   setupManualSearch();
+  setupAutoSync();
   cargarReferencias();
   iniciarScanner();
+  capturarGPS();
 });

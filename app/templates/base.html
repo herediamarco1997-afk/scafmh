@@ -88,7 +88,9 @@
     <div class="header">
         <div>
             <h1>SCAFMH - Sistema de Control de Activos Fijos MH</h1>
-            {% if session.get('unidad_actual_id') %}
+            {% if session.get('mostrar_todas') %}
+            <small style="color:#a8c8e8;">TODAS LAS UNIDADES</small>
+            {% elif session.get('unidad_actual_id') %}
             <small style="color:#a8c8e8;">
                 {% for u in unidades if u.id == session.unidad_actual_id %}
                 {{ u.codigo }} - {{ u.descripcion }}
@@ -118,6 +120,14 @@
         <a href="{{ url_for('respaldos.listar') }}" class="{% if request.endpoint and 'respaldos' in request.endpoint %}active{% endif %}">Respaldos BD</a>
         {% endif %}
         <a href="{{ url_for('main.seguridad') }}" style="margin-left:auto;">Seguridad</a>
+        <form method="POST" action="{{ url_for('main.seleccionar_unidad') }}" style="display:inline; margin-left:10px;">
+            <select name="unidad_id" onchange="this.form.submit()" style="padding:5px; border-radius:4px; font-size:12px;">
+                <option value="0" {% if session.get('mostrar_todas') %}selected{% endif %}>TODAS</option>
+                {% for u in unidades %}
+                <option value="{{ u.id }}" {% if session.get('unidad_actual_id') == u.id %}selected{% endif %}>{{ u.codigo }}</option>
+                {% endfor %}
+            </select>
+        </form>
     </div>
     {% endif %}
     <div class="container">

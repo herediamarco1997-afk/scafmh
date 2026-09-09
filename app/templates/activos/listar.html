@@ -21,7 +21,9 @@
 <div class="card">
     <table>
         <tr>
-            <th>Código</th><th>Fecha</th><th>Descripción</th><th>Grupo</th><th>Oficina</th>
+            <th>Código</th><th>Fecha</th><th>Descripción</th><th>Grupo</th>
+            {% if mostrar_todas %}<th>Unidad</th>{% endif %}
+            <th>Oficina</th>
             <th>Responsable</th><th>Costo Bs</th><th>Estado</th><th>Acciones</th>
         </tr>
         {% for a in activos %}
@@ -30,6 +32,7 @@
             <td>{{ a.fecha_incorporacion }}</td>
             <td>{{ a.descripcion[:50] }}{% if a.descripcion|length > 50 %}...{% endif %}</td>
             <td>{{ a.grupo.codigo if a.grupo else '' }}</td>
+            {% if mostrar_todas %}<td>{{ a.oficina_rel.unidad.codigo if a.oficina_rel and a.oficina_rel.unidad else '' }}</td>{% endif %}
             <td>{{ a.oficina_rel.nombre if a.oficina_rel else '' }}</td>
             <td>{{ a.responsable_rel.nombre if a.responsable_rel else '' }}</td>
             <td style="text-align:right;">{{ "{:,.2f}".format(a.costo_inicial|float) }}</td>
@@ -44,7 +47,7 @@
             </td>
         </tr>
         {% else %}
-        <tr><td colspan="9" style="text-align:center; color:#999;">No hay activos fijos registrados</td></tr>
+        <tr><td colspan="{% if mostrar_todas %}10{% else %}9{% endif %}" style="text-align:center; color:#999;">No hay activos fijos registrados</td></tr>
         {% endfor %}
     </table>
 </div>

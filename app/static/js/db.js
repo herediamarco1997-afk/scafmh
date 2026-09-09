@@ -1,5 +1,5 @@
 const DB_NAME = 'scafmh_inventario';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const STORE_RESULTADOS = 'resultados';
 const STORE_OFICINAS = 'oficinas';
 const STORE_RESPONSABLES = 'responsables';
@@ -14,6 +14,12 @@ function openDB() {
         const store = db.createObjectStore(STORE_RESULTADOS, { keyPath: 'id', autoIncrement: true });
         store.createIndex('codigo', 'codigo', { unique: false });
         store.createIndex('sincronizado', 'sincronizado', { unique: false });
+      } else if (e.oldVersion < 3) {
+        const tx = e.target.transaction;
+        const store = tx.objectStore(STORE_RESULTADOS);
+        if (!store.indexNames.contains('foto_pendiente')) {
+          store.createIndex('foto_pendiente', 'foto_pendiente', { unique: false });
+        }
       }
 
       if (!db.objectStoreNames.contains(STORE_OFICINAS)) {
@@ -43,6 +49,7 @@ export async function guardarResultado(resultado) {
       sincronizado: false,
       fecha_toma: new Date().toISOString(),
       dispositivo: navigator.userAgent,
+      foto_pendiente: resultado.foto_base64 ? true : false,
     });
     tx.oncomplete = () => resolve();
     tx.onerror = e => reject(e.target.error);
@@ -75,6 +82,7 @@ export async function marcarSincronizado(id) {
       const item = req.result;
       if (item) {
         item.sincronizado = true;
+        item.foto_pendiente = false;
         store.put(item);
       }
     };
@@ -86,6 +94,58 @@ export async function marcarSincronizado(id) {
 export async function getConteoPendientes() {
   const items = await getPendientes();
   return items.length;
+}
+
+// ─── Duplicados ─────────────────────────────────────────────────────────
+
+export async function existeCodigo(codigo) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_RESULTADOS, 'readonly');
+    const store = tx.objectStore(STORE_RESULTADOS);
+    const index = store.index('codigo');
+    const req = index.getAll(IDBKeyRange.only(codigo));
+    req.onsuccess = () => resolve(req.result.length > 0);
+    req.onerror = e => reject(e.target.error);
+  });
+}
+
+// ─── Fotos offline ──────────────────────────────────────────────────────
+
+export async function getFotosPendientes() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_RESULTADOS, 'readonly');
+    const store = tx.objectStore(STORE_RESULTADOS);
+    const index = store.index('foto_pendiente');
+    const items = [];
+    index.openCursor(IDBKeyRange.only(true)).onsuccess = e => {
+      const cursor = e.target.result;
+      if (cursor) { items.push(cursor.value); cursor.continue(); }
+      else resolve(items);
+    };
+    tx.onerror = e => reject(e.target.error);
+  });
+}
+
+export async function actualizarFotoUrl(id, fotoUrl) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_RESULTADOS, 'readwrite');
+    const store = tx.objectStore(STORE_RESULTADOS);
+    const req = store.get(id);
+    req.onsuccess = () => {
+      const item = req.result;
+      if (item) {
+        item.foto_url = fotoUrl;
+        item.foto_pendiente = false;
+        delete item.foto_base64;
+        store.put(item);
+      }
+    };
+    tx.oncomplete = () => resolve();
+    tx.onerror = e => reject(e.target.error);
+  });
 }
 
 // ─── Oficinas (caché offline) ───────────────────────────────────────────

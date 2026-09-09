@@ -13,8 +13,9 @@ transferencias_bp = Blueprint('transferencias', __name__, url_prefix='/transfere
 @login_required
 def listar():
     unidad_id = session.get('unidad_actual_id')
+    mostrar_todas = session.get('mostrar_todas', False)
     q = Transferencia.query
-    if unidad_id:
+    if unidad_id and not mostrar_todas:
         q = q.join(ActivoFijo).filter(ActivoFijo.unidad_id == unidad_id)
     transfers = q.order_by(Transferencia.id.desc()).all()
     return render_template('transferencias/listar.html', transfers=transfers)

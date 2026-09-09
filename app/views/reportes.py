@@ -57,7 +57,8 @@ def listar():
 @login_required
 def generar(num):
     unidad_id = session.get('unidad_actual_id')
-    unidad = get_unidad_info(unidad_id)
+    mostrar_todas = session.get('mostrar_todas', False)
+    unidad = get_unidad_info(unidad_id) if not mostrar_todas else None
     hoy = date.today()
     gestion = hoy.year
     ufv = get_ufv_today()
@@ -67,7 +68,7 @@ def generar(num):
 
     def base_query():
         q = ActivoFijo.query
-        if unidad_id:
+        if unidad_id and not mostrar_todas:
             q = q.filter_by(unidad_id=unidad_id)
         return q
 

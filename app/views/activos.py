@@ -12,14 +12,15 @@ activos_bp = Blueprint('activos', __name__)
 @login_required
 def listar():
     unidad_id = session.get('unidad_actual_id')
+    mostrar_todas = session.get('mostrar_todas', False)
     query = ActivoFijo.query
-    if unidad_id:
+    if unidad_id and not mostrar_todas:
         query = query.filter_by(unidad_id=unidad_id)
     estado = request.args.get('estado', '')
     if estado:
         query = query.filter_by(estado=estado)
     activos = query.order_by(ActivoFijo.codigo).all()
-    return render_template('activos/listar.html', activos=activos, estado_filtro=estado)
+    return render_template('activos/listar.html', activos=activos, estado_filtro=estado, mostrar_todas=mostrar_todas)
 
 @activos_bp.route('/nuevo', methods=['GET', 'POST'])
 @login_required
@@ -228,8 +229,9 @@ def buscar():
     q = request.args.get('q', '')
     campo = request.args.get('campo', 'codigo')
     unidad_id = session.get('unidad_actual_id')
+    mostrar_todas = session.get('mostrar_todas', False)
     query = ActivoFijo.query
-    if unidad_id:
+    if unidad_id and not mostrar_todas:
         query = query.filter_by(unidad_id=unidad_id)
     if q:
         if campo == 'codigo':
@@ -241,4 +243,4 @@ def buscar():
         elif campo == 'responsable':
             query = query.join(Responsable).filter(Responsable.nombre.contains(q))
     activos = query.order_by(ActivoFijo.codigo).all()
-    return render_template('activos/listar.html', activos=activos, q=q, campo=campo)
+    return render_template('activos/listar.html', activos=activos, q=q, campo=campo, mostrar_todas=mostrar_todas)

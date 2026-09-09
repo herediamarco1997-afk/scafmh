@@ -11,9 +11,13 @@ oficinas_bp = Blueprint('oficinas', __name__)
 def listar():
     from flask import session
     unidad_id = session.get('unidad_actual_id')
-    if not unidad_id:
+    mostrar_todas = session.get('mostrar_todas', False)
+    if not unidad_id and not mostrar_todas:
         return redirect(url_for('main.inicio'))
-    oficinas = Oficina.query.filter_by(unidad_id=unidad_id).all()
+    if mostrar_todas:
+        oficinas = Oficina.query.all()
+    else:
+        oficinas = Oficina.query.filter_by(unidad_id=unidad_id).all()
     return render_template('oficinas/listar.html', oficinas=oficinas)
 
 @oficinas_bp.route('/ver/<int:id>')

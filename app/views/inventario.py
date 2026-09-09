@@ -161,22 +161,33 @@ def api_subir_resultados():
         try:
             nueva_oficina_id = item.get('nueva_oficina_id')
             nuevo_responsable_id = item.get('nuevo_responsable_id')
+            nuevo_estado = item.get('nuevo_estado')
             # Validar que los IDs existan si se enviaron
             if nueva_oficina_id and not db.session.get(Oficina, nueva_oficina_id):
                 nueva_oficina_id = None
             if nuevo_responsable_id and not db.session.get(Responsable, nuevo_responsable_id):
                 nuevo_responsable_id = None
 
+            # Validar resultado
+            resultado = item.get('resultado', 'VERIFICADO')
+            if resultado not in ('VERIFICADO', 'NOVEDAD', 'NO_ENCONTRADO'):
+                resultado = 'VERIFICADO'
+
+            # Actualizar estado del bien si se envió nuevo_estado
+            if nuevo_estado and activo:
+                activo.estado_bien = nuevo_estado
+
             rec = InventarioFisico(
                 activo_id=activo.id,
                 codigo=codigo,
-                resultado=item.get('resultado', 'VERIFICADO'),
+                resultado=resultado,
                 observacion=item.get('observacion', ''),
                 foto_url=item.get('foto_url', ''),
                 ubicacion_reportada=item.get('ubicacion', ''),
                 responsable_reportado=item.get('responsable', ''),
                 nueva_oficina_id=nueva_oficina_id,
                 nuevo_responsable_id=nuevo_responsable_id,
+                nuevo_estado=nuevo_estado,
                 latitud=item.get('lat'),
                 longitud=item.get('lng'),
                 usuario=current_user.username,
@@ -197,7 +208,6 @@ def api_subir_resultados():
 @inventario_permitido
 def api_guardar_resultado():
     data = request.get_json(force=True)
-    print(f"[api_guardar] data={data}", flush=True)
     if not data:
         return jsonify({'error': 'sin datos'}), 400
     codigo = data.get('codigo', '').strip()
@@ -216,10 +226,14 @@ def api_guardar_resultado():
         nuevo_estado = data.get('nuevo_estado')
         if nuevo_estado:
             activo.estado_bien = nuevo_estado
+        # Validar resultado
+        resultado = data.get('resultado', 'VERIFICADO')
+        if resultado not in ('VERIFICADO', 'NOVEDAD', 'NO_ENCONTRADO'):
+            resultado = 'VERIFICADO'
         fecha_toma = datetime.fromisoformat(data['fecha_toma']) if data.get('fecha_toma') else datetime.now()
         rec = InventarioFisico.query.filter_by(codigo=codigo).first()
         if rec:
-            rec.resultado = data.get('resultado', 'VERIFICADO')
+            rec.resultado = resultado
             rec.observacion = data.get('observacion', '')
             rec.foto_url = data.get('foto_url', '')
             rec.nueva_oficina_id = nueva_oficina_id
@@ -232,7 +246,7 @@ def api_guardar_resultado():
             rec = InventarioFisico(
                 activo_id=activo.id,
                 codigo=codigo,
-                resultado=data.get('resultado', 'VERIFICADO'),
+                resultado=resultado,
                 observacion=data.get('observacion', ''),
                 foto_url=data.get('foto_url', ''),
                 ubicacion_reportada=data.get('ubicacion', ''),

@@ -11,3 +11,6 @@ app_out.txt
 app_err.txt
 *.pdf
 *.jpg
+instance/
+debug_app.py
+check_db.py
