@@ -34,7 +34,8 @@ def inventario_permitido(f):
 @inventario_bp.route('/')
 @inventario_permitido
 def lista():
-    return render_template('inventario/lista.html')
+    from datetime import date
+    return render_template('inventario/lista.html', today=date.today().isoformat())
 
 
 @inventario_bp.route('/escanear')
@@ -48,10 +49,20 @@ def escanear():
 def resultados():
     page = request.args.get('page', 1, type=int)
     per_page = 50
-    resultados = InventarioFisico.query.order_by(InventarioFisico.fecha_sincronizacion.desc()).paginate(
-        page=page, per_page=per_page, error_out=False
-    )
-    return render_template('inventario/resultados.html', resultados=resultados)
+    fecha = request.args.get('fecha', '').strip()
+    q = InventarioFisico.query.order_by(InventarioFisico.fecha_toma.desc(), InventarioFisico.id.desc())
+    if fecha:
+        try:
+            from datetime import datetime as dt, timedelta
+            fecha_dt = dt.strptime(fecha, '%Y-%m-%d')
+            q = q.filter(
+                InventarioFisico.fecha_toma >= fecha_dt,
+                InventarioFisico.fecha_toma < fecha_dt + timedelta(days=1)
+            )
+        except ValueError:
+            pass
+    resultados = q.paginate(page=page, per_page=per_page, error_out=False)
+    return render_template('inventario/resultados.html', resultados=resultados, fecha_seleccionada=fecha)
 
 
 # ─── API ────────────────────────────────────────────────────────────────
@@ -195,25 +206,40 @@ def api_subir_resultados():
             if nuevo_estado and activo:
                 activo.estado_bien = nuevo_estado
 
-            rec = InventarioFisico(
-                activo_id=activo.id,
-                codigo=codigo,
-                resultado=resultado,
-                observacion=item.get('observacion', ''),
-                foto_url=item.get('foto_url', ''),
-                ubicacion_reportada=item.get('ubicacion', ''),
-                responsable_reportado=item.get('responsable', ''),
-                nueva_oficina_id=nueva_oficina_id,
-                nuevo_responsable_id=nuevo_responsable_id,
-                nuevo_estado=nuevo_estado,
-                latitud=item.get('lat'),
-                longitud=item.get('lng'),
-                usuario=current_user.username,
-                dispositivo=item.get('dispositivo', ''),
-                fecha_sincronizacion=datetime.now(),
-                fecha_toma=datetime.fromisoformat(item['fecha_toma']) if item.get('fecha_toma') else datetime.now(),
-            )
-            db.session.add(rec)
+            fecha_toma = datetime.fromisoformat(item['fecha_toma']) if item.get('fecha_toma') else datetime.now()
+            rec = InventarioFisico.query.filter_by(codigo=codigo).order_by(InventarioFisico.id.desc()).first()
+            if rec:
+                rec.resultado = resultado
+                rec.observacion = item.get('observacion', '')
+                rec.foto_url = item.get('foto_url', '') or rec.foto_url
+                rec.nueva_oficina_id = nueva_oficina_id or rec.nueva_oficina_id
+                rec.nuevo_responsable_id = nuevo_responsable_id or rec.nuevo_responsable_id
+                rec.nuevo_estado = nuevo_estado or rec.nuevo_estado
+                rec.latitud = item.get('lat') or rec.latitud
+                rec.longitud = item.get('lng') or rec.longitud
+                rec.usuario = current_user.username
+                rec.fecha_sincronizacion = datetime.now()
+                rec.fecha_toma = fecha_toma
+            else:
+                rec = InventarioFisico(
+                    activo_id=activo.id,
+                    codigo=codigo,
+                    resultado=resultado,
+                    observacion=item.get('observacion', ''),
+                    foto_url=item.get('foto_url', ''),
+                    ubicacion_reportada=item.get('ubicacion', ''),
+                    responsable_reportado=item.get('responsable', ''),
+                    nueva_oficina_id=nueva_oficina_id,
+                    nuevo_responsable_id=nuevo_responsable_id,
+                    nuevo_estado=nuevo_estado,
+                    latitud=item.get('lat'),
+                    longitud=item.get('lng'),
+                    usuario=current_user.username,
+                    dispositivo=item.get('dispositivo', ''),
+                    fecha_sincronizacion=datetime.now(),
+                    fecha_toma=fecha_toma,
+                )
+                db.session.add(rec)
             created += 1
         except Exception as e:
             errors.append({'codigo': codigo, 'error': str(e)})

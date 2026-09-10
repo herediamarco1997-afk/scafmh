@@ -34,7 +34,8 @@
 
 <div class="action-bar">
   <button class="btn btn-primary" id="btn-sync" onclick="event.preventDefault()">0 pendientes</button>
-  <a href="{{ url_for('inventario.resultados') }}" class="btn btn-secondary">Ver resultados sincronizados</a>
+  <a href="{{ url_for('inventario.resultados') }}" class="btn btn-secondary">📋 Ver resultados</a>
+  <a href="{{ url_for('inventario.resultados') }}?fecha={{today}}" class="btn btn-secondary">📅 Ver hoy</a>
 </div>
 
 <link rel="manifest" href="/static/pwa/manifest.json">

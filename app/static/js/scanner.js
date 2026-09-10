@@ -60,6 +60,7 @@ async function subirFotosOffline(pendientes) {
 async function sincronizar() {
   const btn = document.getElementById('btn-sync');
   if (!btn) return;
+  if (btn.disabled) return;
   btn.disabled = true;
   btn.textContent = 'Sincronizando...';
 
@@ -101,16 +102,18 @@ async function sincronizar() {
         await marcarSincronizado(p.id);
       }
       await actualizarEstadisticas();
-      btn.textContent = `${data.created} sincronizados`;
+      btn.textContent = data.created + ' sync OK';
       if (data.errors && data.errors.length > 0) {
         console.warn('Errores de sync:', data.errors);
+        btn.textContent += ' (' + data.errors.length + ' err)';
       }
     } else {
-      btn.textContent = 'Error en sync';
+      btn.textContent = 'Error sync: ' + (data.error || 'sin respuesta');
+      console.error('Sync error:', data);
     }
   } catch (e) {
-    btn.textContent = 'Error de conexión';
-    console.error(e);
+    btn.textContent = 'Sin conexion';
+    console.error('Sync error:', e);
   }
   btn.disabled = false;
   setTimeout(() => actualizarPendientes(), 1000);
@@ -346,7 +349,10 @@ async function registrarResultado(resultado) {
 
     // Intentar enviar al servidor primero
     let enviado = false;
+    let serverError = null;
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
       const r = await fetch('/inventario/api/guardar', {
         method: 'POST',
         credentials: 'same-origin',
@@ -364,23 +370,27 @@ async function registrarResultado(resultado) {
           lng: registro.lng,
           fecha_toma: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 19),
         }),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
       if (r.ok) {
         enviado = true;
         document.getElementById('ultimo-guardado').textContent = currentDetalle.codigo;
         await actualizarEstadisticas();
-        mostrarConfirmacion(currentDetalle.codigo);
+        mostrarConfirmacion(currentDetalle.codigo, 'servidor');
+      } else {
+        serverError = 'HTTP ' + r.status;
       }
     } catch (e) {
-      // Offline — guardar en IndexedDB
+      serverError = e.name === 'AbortError' ? 'timeout (15s)' : e.message || 'red';
     }
 
     if (!enviado) {
       // Guardar en IndexedDB para sincronizar después
       await guardarResultado(registro);
       await actualizarPendientes();
-      document.getElementById('ultimo-guardado').textContent = currentDetalle.codigo + ' (pendiente)';
-      mostrarConfirmacion(currentDetalle.codigo);
+      document.getElementById('ultimo-guardado').textContent = currentDetalle.codigo + ' (local)';
+      mostrarConfirmacion(currentDetalle.codigo, 'local', serverError);
     }
 
   } catch (e) {
@@ -389,10 +399,25 @@ async function registrarResultado(resultado) {
   }
 }
 
-function mostrarConfirmacion(codigo) {
+function mostrarConfirmacion(codigo, destino, error) {
   var el;
   el = document.getElementById('acciones-registro'); if (el) el.classList.add('hidden');
   el = document.getElementById('confirmacion-guardado'); if (el) el.classList.remove('hidden');
+  var msgEl = document.getElementById('msg-guardado');
+  if (msgEl) {
+    if (destino === 'servidor') {
+      msgEl.textContent = 'Guardado en servidor: ' + codigo;
+      msgEl.style.color = '#4caf50';
+    } else {
+      msgEl.textContent = 'Guardado local: ' + codigo;
+      msgEl.style.color = '#ff9800';
+      var errEl = document.getElementById('msg-error-guardado');
+      if (errEl) {
+        errEl.textContent = error ? 'Servidor no disponible (' + error + '). Se sincronizará cuando haya conexión.' : 'Se sincronizará cuando haya conexión.';
+        errEl.style.display = 'block';
+      }
+    }
+  }
 }
 
 window.registrarResultado = registrarResultado;
@@ -486,6 +511,14 @@ function setupAutoSync() {
       sincronizar();
     }
   });
+  // Sync periódico cada 30 segundos si hay pendientes
+  setInterval(async () => {
+    if (!navigator.onLine) return;
+    const pendientes = await getConteoPendientes();
+    if (pendientes > 0) {
+      sincronizar();
+    }
+  }, 30000);
 }
 
 // ─── Scanner ────────────────────────────────────────────────────────────

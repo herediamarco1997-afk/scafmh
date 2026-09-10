@@ -30,6 +30,8 @@
     <p style="text-align:center;margin-top:10px">
       <span id="pendientes-count" style="display:inline-block;padding:3px 10px;border-radius:10px;background:#fff3cd;font-size:12px">0</span>
       <span style="font-size:12px;color:#666"> resultados pendientes de sync</span>
+      <br>
+      <button class="btn btn-secondary" id="btn-sync" style="margin-top:8px;padding:6px 16px;font-size:12px">0 pendientes</button>
     </p>
   </div>
 </div>
@@ -115,6 +117,7 @@
   </div>
   <div id="confirmacion-guardado" class="hidden" style="text-align:center;padding:20px">
     <p id="msg-guardado" style="font-size:18px;font-weight:bold;color:#4caf50"></p>
+    <p id="msg-error-guardado" style="font-size:13px;color:#e65100;margin-top:4px;display:none"></p>
     <div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
       <button class="btn btn-primary" id="btn-volver-escanear" style="padding:10px 20px">📷 Volver a escanear</button>
       <a href="{{ url_for('inventario.resultados') }}" class="btn btn-secondary" style="padding:10px 20px">📋 Ver resultados</a>

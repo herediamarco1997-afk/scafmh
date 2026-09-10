@@ -2,11 +2,47 @@
 {% block content %}
 <div class="section-title">
   <a href="{{ url_for('inventario.lista') }}" style="font-size:14px;font-weight:normal">&larr; Volver al panel</a>
-  — Resultados sincronizados
+  — Resultados de toma física
+</div>
+
+<div class="card" style="margin-bottom:12px">
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <label style="font-weight:bold;font-size:14px">Filtrar por día:</label>
+    <form method="GET" style="display:flex;gap:8px;align-items:center">
+      <input type="date" name="fecha" value="{{ fecha_seleccionada or '' }}" style="padding:6px 10px;border:1px solid #ccc;border-radius:4px;font-size:14px">
+      <button type="submit" class="btn btn-primary" style="padding:6px 14px;font-size:13px">Filtrar</button>
+      {% if fecha_seleccionada %}
+      <a href="{{ url_for('inventario.resultados') }}" class="btn btn-secondary" style="padding:6px 14px;font-size:13px">Ver todos</a>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:12px;padding:12px;background:#e3f2fd">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+    <span style="font-size:13px;color:#1565c0">📊 <strong id="servidor-count">{{ resultados.total }}</strong> registros sincronizados</span>
+    <span style="font-size:13px;color:#e65100">⏳ <strong id="local-count">0</strong> pendientes locales</span>
+    <button class="btn btn-secondary" id="btn-sync-resultados" style="padding:5px 12px;font-size:12px">Sincronizar pendientes</button>
+  </div>
+</div>
+
+<div id="pendientes-locales" class="card" style="display:none;margin-bottom:12px;border-left:4px solid #ff9800">
+  <h2 style="color:#e65100;font-size:15px">Pendientes de sincronizar</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Código</th>
+        <th>Resultado</th>
+        <th>Observación</th>
+        <th>Fecha escaneo</th>
+      </tr>
+    </thead>
+    <tbody id="pendientes-body"></tbody>
+  </table>
 </div>
 
 <div class="card">
-  <h2>Historial de toma física</h2>
+  <h2>Historial sincronizado {% if fecha_seleccionada %} — {{ fecha_seleccionada }}{% endif %}</h2>
   <table>
     <thead>
       <tr>
@@ -47,7 +83,7 @@
         <td>{{ r.fecha_toma.strftime('%d/%m/%Y %H:%M') if r.fecha_toma else (r.fecha_sincronizacion.strftime('%d/%m/%Y %H:%M') if r.fecha_sincronizacion else '-') }}</td>
       </tr>
       {% else %}
-      <tr><td colspan="11" style="text-align:center;color:#999">Sin resultados a&uacute;n</td></tr>
+      <tr><td colspan="11" style="text-align:center;color:#999">Sin resultados {% if fecha_seleccionada %}para {{ fecha_seleccionada }}{% else %}a&uacute;n{% endif %}</td></tr>
       {% endfor %}
     </tbody>
   </table>
@@ -55,9 +91,99 @@
 
 {% if resultados.pages > 1 %}
 <div class="action-bar">
+  {% if fecha_seleccionada %}{% set base = '?fecha=' + fecha_seleccionada + '&' %}{% else %}{% set base = '?' %}{% endif %}
   {% for p in range(1, resultados.pages + 1) %}
-  <a href="?page={{ p }}" class="btn btn-sm {% if p == resultados.page %}btn-primary{% else %}btn-secondary{% endif %}">{{ p }}</a>
+  <a href="{{ base }}page={{ p }}" class="btn btn-sm {% if p == resultados.page %}btn-primary{% else %}btn-secondary{% endif %}">{{ p }}</a>
   {% endfor %}
 </div>
 {% endif %}
+
+<script type="module">
+import { getPendientes, marcarSincronizado, getFotosPendientes, actualizarFotoUrl } from '/static/js/db.js?v=3';
+
+async function cargarPendientes() {
+  try {
+    const pendientes = await getPendientes();
+    document.getElementById('local-count').textContent = pendientes.length;
+    var tbody = document.getElementById('pendientes-body');
+    var container = document.getElementById('pendientes-locales');
+    if (pendientes.length > 0 && tbody) {
+      container.style.display = 'block';
+      tbody.innerHTML = '';
+      for (var i = pendientes.length - 1; i >= 0 && i >= pendientes.length - 20; i--) {
+        var p = pendientes[i];
+        var tr = document.createElement('tr');
+        var badge = '';
+        if (p.resultado === 'VERIFICADO') badge = '<span class="badge badge-success">&#10003;</span>';
+        else if (p.resultado === 'NOVEDAD') badge = '<span class="badge badge-warning">&#9888;</span>';
+        else badge = '<span class="badge badge-danger">&#10007;</span>';
+        var fechaStr = '';
+        if (p.fecha_toma) {
+          try { var d = new Date(p.fecha_toma); fechaStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString(); } catch(e) { fechaStr = p.fecha_toma; }
+        }
+        tr.innerHTML = '<td><strong>' + (p.codigo||'') + '</strong></td><td>' + badge + ' ' + (p.resultado||'') + '</td><td>' + (p.observacion||'') + '</td><td>' + fechaStr + '</td>';
+        tbody.appendChild(tr);
+      }
+    } else if (container) {
+      container.style.display = 'none';
+    }
+  } catch(e) { console.error('Error cargando pendientes:', e); }
+}
+
+async function subirFotosOffline(pendientes) {
+  for (const p of pendientes) {
+    if (!p.foto_base64) continue;
+    try {
+      const formData = new FormData();
+      const blob = await (await fetch(p.foto_base64)).blob();
+      formData.append('foto', blob, p.codigo + '.jpg');
+      const r = await fetch('/inventario/api/foto', { method: 'POST', body: formData });
+      const d = await r.json();
+      if (d.url) {
+        await actualizarFotoUrl(p.id, d.url);
+        p.foto_url = d.url;
+      }
+    } catch (e) { console.warn('Error subiendo foto:', p.codigo, e); }
+  }
+}
+
+async function sincronizarLocal() {
+  var btn = document.getElementById('btn-sync-resultados');
+  if (!btn) return;
+  var pendientes = await getPendientes();
+  if (pendientes.length === 0) { btn.textContent = '0 pendientes'; return; }
+  btn.disabled = true;
+  btn.textContent = 'Sincronizando...';
+  await subirFotosOffline(pendientes);
+  try {
+    var r = await fetch('/inventario/api/resultados', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(pendientes.map(p => ({
+        codigo: p.codigo, resultado: p.resultado, observacion: p.observacion,
+        foto_url: p.foto_url || '', ubicacion: '', responsable: p.responsable_text || '',
+        nueva_oficina_id: p.nueva_oficina_id || null, nuevo_responsable_id: p.nuevo_responsable_id || null,
+        nuevo_estado: p.nuevo_estado || null, lat: p.lat, lng: p.lng,
+        fecha_toma: p.fecha_toma, dispositivo: p.dispositivo || '',
+      }))),
+    });
+    var data = await r.json();
+    if (data.created > 0) {
+      for (var p of pendientes) await marcarSincronizado(p.id);
+      btn.textContent = data.created + ' sync OK';
+    } else {
+      btn.textContent = 'Error: ' + (data.error || 'server');
+    }
+  } catch (e) {
+    btn.textContent = 'Sin conexion';
+  }
+  btn.disabled = false;
+  setTimeout(cargarPendientes, 1500);
+}
+
+cargarPendientes();
+
+var syncBtn = document.getElementById('btn-sync-resultados');
+if (syncBtn) syncBtn.addEventListener('click', sincronizarLocal);
+</script>
 {% endblock %}
