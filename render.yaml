@@ -10,12 +10,8 @@ web:
     - key: SECRET_KEY
       value: scafmh-secret-key-2026
     - key: DATABASE_URL
-      value: sqlite:///activos.db
+      sync: false
     - key: CLOUDINARY_URL
       sync: false
     - key: PYTHON_VERSION
       value: 3.12.0
-  disk:
-    name: data
-    mountPath: /opt/render/project/src
-    sizeGB: 1

@@ -4,7 +4,16 @@ from dotenv import load_dotenv
 load_dotenv()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'sqlite:///' + os.path.join(BASE_DIR, 'activos.db'))
+
+db_url = os.getenv('DATABASE_URL', '')
+if db_url and db_url.startswith('postgres'):
+    # Neon/Render PostgreSQL: ensure proper prefix for SQLAlchemy
+    if db_url.startswith('postgres://'):
+        db_url = db_url.replace('postgres://', 'postgresql://', 1)
+    SQLALCHEMY_DATABASE_URI = db_url
+else:
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(BASE_DIR, 'activos.db')
+
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 SECRET_KEY = os.getenv('SECRET_KEY', 'scafmh-secret-key-2026')
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'backups')
