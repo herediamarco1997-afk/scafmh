@@ -46,23 +46,61 @@ def create_app():
 
     @app.context_processor
     def inject_unidades():
-        from app.models import UnidadAdministrativa
-        return {'unidades': UnidadAdministrativa.query.all()}
+        try:
+            from app.models import UnidadAdministrativa
+            return {'unidades': UnidadAdministrativa.query.all()}
+        except Exception:
+            return {'unidades': []}
+
+    @app.errorhandler(500)
+    def internal_error(e):
+        from flask import render_template_string
+        return render_template_string('''<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SCAFMH - Cargando...</title><style>body{font-family:Segoe UI,Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f0f2f5;text-align:center;padding:20px}
+.box{background:white;padding:40px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);max-width:400px}
+h1{color:#1a3a5c;font-size:20px}p{color:#666;font-size:14px}</style></head>
+<body><div class="box"><h1>SCAFMH</h1><p>El servidor se está iniciando (cold start).<br><br>Esto tarda ~30 segundos la primera vez.<br><br><strong>Recargá la página en unos segundos.</strong></p><br><a href="/" style="color:#2c5f8a;font-weight:bold">Recargar</a></div></body></html>'''), 500
+
+    @app.errorhandler(502)
+    def bad_gateway(e):
+        from flask import render_template_string
+        return render_template_string('''<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SCAFMH - Cargando...</title><style>body{font-family:Segoe UI,Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f0f2f5;text-align:center;padding:20px}
+.box{background:white;padding:40px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);max-width:400px}
+h1{color:#1a3a5c;font-size:20px}p{color:#666;font-size:14px}</style></head>
+<body><div class="box"><h1>SCAFMH</h1><p>El servidor se está reiniciando.<br><br>Esperá 30 segundos y recargá.</p><br><a href="/" style="color:#2c5f8a;font-weight:bold">Recargar</a></div></body></html>'''), 502
 
     with app.app_context():
-        db.create_all()
-        if not Usuario.query.filter_by(username='admin').first():
-            from werkzeug.security import generate_password_hash
-            admin = Usuario(username='admin', password=generate_password_hash('admin'), rol='ADMINISTRADOR')
-            db.session.add(admin)
-            db.session.commit()
-        # Migraciones de esquema
-        from sqlalchemy import inspect, text
-        insp = inspect(db.engine)
-        if insp.has_table('inventario_fisico'):
-            cols = [c['name'] for c in insp.get_columns('inventario_fisico')]
-            if 'nuevo_estado' not in cols:
-                db.session.execute(text('ALTER TABLE inventario_fisico ADD COLUMN nuevo_estado VARCHAR(10)'))
+        import time
+        for attempt in range(3):
+            try:
+                db.create_all()
+                break
+            except Exception as e:
+                if attempt < 2:
+                    time.sleep(3)
+                else:
+                    print(f"DB connection failed after 3 attempts: {e}")
+
+        try:
+            if not Usuario.query.filter_by(username='admin').first():
+                from werkzeug.security import generate_password_hash
+                admin = Usuario(username='admin', password=generate_password_hash('admin'), rol='ADMINISTRADOR')
+                db.session.add(admin)
                 db.session.commit()
+        except Exception:
+            pass
+
+        # Migraciones de esquema
+        try:
+            from sqlalchemy import inspect, text
+            insp = inspect(db.engine)
+            if insp.has_table('inventario_fisico'):
+                cols = [c['name'] for c in insp.get_columns('inventario_fisico')]
+                if 'nuevo_estado' not in cols:
+                    db.session.execute(text('ALTER TABLE inventario_fisico ADD COLUMN nuevo_estado VARCHAR(10)'))
+                    db.session.commit()
+        except Exception:
+            pass
 
     return app
