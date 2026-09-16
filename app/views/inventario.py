@@ -15,6 +15,36 @@ inventario_bp = Blueprint('inventario', __name__, url_prefix='/inventario')
 ROLES_INVENTARIO = [ROL_ADMIN, ROL_INVENTARIADOR]
 
 
+def _upload_base64_photo(foto_base64, codigo, suffix=''):
+    """Upload base64 photo to Cloudinary, return URL or empty string."""
+    if not foto_base64:
+        return ''
+    try:
+        import base64 as b64
+        import io
+        header, data_b64 = foto_base64.split(',', 1) if ',' in foto_base64 else ('', foto_base64)
+        img_bytes = b64.b64decode(data_b64)
+        file_obj = io.BytesIO(img_bytes)
+        file_obj.name = f"inventario_{codigo}_{suffix}.jpg"
+        cfg = current_app.config
+        cloud_name = cfg.get('CLOUDINARY_CLOUD_NAME')
+        api_key = cfg.get('CLOUDINARY_API_KEY')
+        api_secret = cfg.get('CLOUDINARY_API_SECRET')
+        if cloud_name and api_key and api_secret:
+            cloudinary.config(cloud_name=cloud_name, api_key=api_key, api_secret=api_secret)
+        result = cloudinary.uploader.upload(
+            file_obj,
+            folder='activos_fotos',
+            public_id=f"inventario_{codigo}_{suffix}_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}",
+            quality='auto:good',
+            fetch_format='auto',
+        )
+        return result.get('secure_url', '')
+    except Exception as e:
+        print(f"Error subiendo foto base64: {e}")
+        return ''
+
+
 def inventario_permitido(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
@@ -275,31 +305,16 @@ def api_guardar_resultado():
         if resultado not in ('VERIFICADO', 'NOVEDAD', 'NO_ENCONTRADO'):
             resultado = 'VERIFICADO'
 
-        # Subir foto: primero intentar foto_url, si no hay, subir base64
+        # Subir fotos
         foto_url = data.get('foto_url', '')
         foto_base64 = data.get('foto_base64', '')
         if not foto_url and foto_base64:
-            try:
-                import base64 as b64
-                header, data_b64 = foto_base64.split(',', 1) if ',' in foto_base64 else ('', foto_base64)
-                img_bytes = b64.b64decode(data_b64)
-                import io
-                file_obj = io.BytesIO(img_bytes)
-                file_obj.name = f"inventario_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
-                cfg = current_app.config
-                cloud_name = cfg.get('CLOUDINARY_CLOUD_NAME')
-                api_key = cfg.get('CLOUDINARY_API_KEY')
-                api_secret = cfg.get('CLOUDINARY_API_SECRET')
-                if cloud_name and api_key and api_secret:
-                    cloudinary.config(cloud_name=cloud_name, api_key=api_key, api_secret=api_secret)
-                result = cloudinary.uploader.upload(
-                    file_obj,
-                    folder='activos_fotos',
-                    public_id=f"inventario_{codigo}_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}",
-                )
-                foto_url = result.get('secure_url', '')
-            except Exception as photo_err:
-                print(f"Error subiendo foto base64: {photo_err}")
+            foto_url = _upload_base64_photo(foto_base64, codigo, 'f1')
+
+        foto_url_2 = data.get('foto_url_2', '')
+        foto_base64_2 = data.get('foto_base64_2', '')
+        if not foto_url_2 and foto_base64_2:
+            foto_url_2 = _upload_base64_photo(foto_base64_2, codigo, 'f2')
 
         fecha_toma = datetime.fromisoformat(data['fecha_toma']) if data.get('fecha_toma') else datetime.now()
         rec = InventarioFisico.query.filter_by(codigo=codigo).first()
@@ -308,6 +323,8 @@ def api_guardar_resultado():
             rec.observacion = data.get('observacion', '')
             if foto_url:
                 rec.foto_url = foto_url
+            if foto_url_2:
+                rec.foto_url_2 = foto_url_2
             rec.nueva_oficina_id = nueva_oficina_id
             rec.nuevo_responsable_id = nuevo_responsable_id
             rec.nuevo_estado = nuevo_estado
@@ -321,6 +338,7 @@ def api_guardar_resultado():
                 resultado=resultado,
                 observacion=data.get('observacion', ''),
                 foto_url=foto_url,
+                foto_url_2=foto_url_2,
                 ubicacion_reportada=data.get('ubicacion', ''),
                 responsable_reportado=data.get('responsable', ''),
                 nueva_oficina_id=nueva_oficina_id,
@@ -420,3 +438,38 @@ def api_cloudinary_config():
         'cloud_name': cfg.get('CLOUDINARY_CLOUD_NAME', ''),
         'upload_preset': cfg.get('CLOUDINARY_UPLOAD_PRESET', 'activos_fotos'),
     })
+
+
+@inventario_bp.route('/api/agregar_foto', methods=['POST'])
+@inventario_permitido
+def api_agregar_foto():
+    """Add a photo to an existing inventory record (for cases where photo was forgotten)."""
+    data = request.get_json(force=True)
+    if not data:
+        return jsonify({'error': 'sin datos'}), 400
+    codigo = data.get('codigo', '').strip()
+    foto_url = data.get('foto_url', '')
+    foto_base64 = data.get('foto_base64', '')
+    foto_num = data.get('foto_num', 1)
+
+    if not codigo:
+        return jsonify({'error': 'codigo vacio'}), 400
+
+    rec = InventarioFisico.query.filter_by(codigo=codigo).order_by(InventarioFisico.id.desc()).first()
+    if not rec:
+        return jsonify({'error': 'registro no encontrado'}), 404
+
+    if not foto_url and foto_base64:
+        suffix = f'f{foto_num}_extra'
+        foto_url = _upload_base64_photo(foto_base64, codigo, suffix)
+
+    if not foto_url:
+        return jsonify({'error': 'no se pudo subir la foto'}), 400
+
+    if foto_num == 2:
+        rec.foto_url_2 = foto_url
+    else:
+        rec.foto_url = foto_url
+    rec.fecha_sincronizacion = datetime.now()
+    db.session.commit()
+    return jsonify({'ok': True, 'foto_url': foto_url})

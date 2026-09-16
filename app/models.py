@@ -172,6 +172,7 @@ class InventarioFisico(db.Model):
     resultado = db.Column(db.String(20), nullable=False)  # VERIFICADO, NOVEDAD, NO_ENCONTRADO
     observacion = db.Column(db.Text)
     foto_url = db.Column(db.String(500))
+    foto_url_2 = db.Column(db.String(500))
     ubicacion_reportada = db.Column(db.String(200))
     responsable_reportado = db.Column(db.String(200))
     # Nuevos campos: cambio de oficina/responsable desde la app móvil

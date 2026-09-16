@@ -93,6 +93,9 @@ h1{color:#1a3a5c;font-size:20px}p{color:#666;font-size:14px}</style></head>
                 if 'nuevo_estado' not in cols:
                     db.session.execute(text('ALTER TABLE inventario_fisico ADD COLUMN nuevo_estado VARCHAR(10)'))
                     db.session.commit()
+                if 'foto_url_2' not in cols:
+                    db.session.execute(text('ALTER TABLE inventario_fisico ADD COLUMN foto_url_2 VARCHAR(500)'))
+                    db.session.commit()
         except Exception:
             pass
 

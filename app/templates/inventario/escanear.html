@@ -67,12 +67,14 @@
     <div class="form-row">
       <div class="form-group">
         <label>Nueva Oficina</label>
+        <input type="text" id="buscar-oficina" placeholder="Buscar oficina..." class="search-select-input" oninput="filterSelect(this, 'nueva-oficina')">
         <select id="nueva-oficina">
           <option value="">— Sin cambio —</option>
         </select>
       </div>
       <div class="form-group">
         <label>Nuevo Responsable</label>
+        <input type="text" id="buscar-responsable" placeholder="Buscar funcionario..." class="search-select-input" oninput="filterSelect(this, 'nuevo-responsable')">
         <select id="nuevo-responsable">
           <option value="">— Sin cambio —</option>
         </select>
@@ -95,17 +97,27 @@
   </div>
 
   <div class="card">
-    <h2>Registrar resultado</h2>
+    <h2>Observación</h2>
     <div class="form-group">
-      <label>Observación</label>
       <textarea id="observacion" class="observacion-textarea" placeholder="Ej: equipo en buen estado, tiene una abolladura..."></textarea>
     </div>
+  </div>
+
+  <div class="card">
+    <h2>Fotos</h2>
     <div class="form-group">
-      <label>Foto</label>
-      <input type="hidden" id="foto-url-guardado">
-      <button class="btn btn-secondary btn-lg" id="btn-foto" style="width:100%">📸 Tomar foto</button>
+      <button class="btn btn-secondary btn-lg" id="btn-foto" style="width:100%">📸 Foto 1 (obligatoria)</button>
       <input type="file" id="foto-input" accept="image/*" capture="environment" style="display:none">
+      <input type="hidden" id="foto-url-guardado">
       <img id="foto-preview" class="hidden" style="max-width:200px;margin-top:8px;border-radius:4px">
+      <p id="foto-status" style="font-size:12px;color:#28a745;margin-top:4px;display:none">✓ Foto 1 subida</p>
+    </div>
+    <div class="form-group">
+      <button class="btn btn-secondary btn-lg" id="btn-foto2" style="width:100%">📸 Foto 2 (opcional)</button>
+      <input type="file" id="foto2-input" accept="image/*" capture="environment" style="display:none">
+      <input type="hidden" id="foto2-url-guardado">
+      <img id="foto2-preview" class="hidden" style="max-width:200px;margin-top:8px;border-radius:4px">
+      <p id="foto2-status" style="font-size:12px;color:#28a745;margin-top:4px;display:none">✓ Foto 2 subida</p>
     </div>
   </div>
 
@@ -137,5 +149,31 @@ if ('serviceWorker' in navigator) {
 #scanner-container video { width:100% !important; height:auto !important; }
 #scanner-container canvas { display:none; }
 .hidden { display:none !important; }
+.search-select-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px;
+  margin-bottom: 4px;
+  background: #fff;
+}
 </style>
+<script>
+function filterSelect(input, selectId) {
+  var select = document.getElementById(selectId);
+  var filter = input.value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  var options = select.options;
+  var firstVisible = null;
+  for (var i = 0; i < options.length; i++) {
+    var text = options[i].text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    var match = text.indexOf(filter) !== -1 || filter === '';
+    options[i].style.display = match ? '' : 'none';
+    if (match && !firstVisible && i > 0) firstVisible = options[i];
+  }
+  if (filter && firstVisible) {
+    select.value = firstVisible.value;
+  }
+}
+</script>
 {% endblock %}

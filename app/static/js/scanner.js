@@ -278,6 +278,11 @@ async function mostrarDetalleActivo(activo) {
   el = document.getElementById('foto-input'); if (el) el.value = '';
   el = document.getElementById('observacion'); if (el) el.value = '';
   el = document.getElementById('foto-url-guardado'); if (el) el.value = '';
+  el = document.getElementById('foto2-preview'); if (el) el.classList.add('hidden');
+  el = document.getElementById('foto2-input'); if (el) el.value = '';
+  el = document.getElementById('foto2-url-guardado'); if (el) el.value = '';
+  el = document.getElementById('foto-status'); if (el) el.style.display = 'none';
+  el = document.getElementById('foto2-status'); if (el) el.style.display = 'none';
 
   // Capturar GPS en background
   capturarGPS();
@@ -315,10 +320,12 @@ async function registrarResultado(resultado) {
     var estId = document.getElementById('nuevo-estado');
     var obsEl = document.getElementById('observacion');
     var fotoEl = document.getElementById('foto-url-guardado');
+    var foto2El = document.getElementById('foto2-url-guardado');
 
-    // Obtener foto como Base64 si existe (para respaldo)
     let fotoBase64 = null;
     let fotoUrl = fotoEl ? fotoEl.value : '';
+    let fotoBase64_2 = null;
+    let fotoUrl_2 = foto2El ? foto2El.value : '';
 
     const preview = document.getElementById('foto-preview');
     if (preview && preview.src && !preview.classList.contains('hidden')) {
@@ -327,8 +334,18 @@ async function registrarResultado(resultado) {
         canvas.width = preview.naturalWidth;
         canvas.height = preview.naturalHeight;
         canvas.getContext('2d').drawImage(preview, 0, 0);
-        fotoBase64 = canvas.toDataURL('image/jpeg', 0.7);
-      } catch (e) { /* no se pudo convertir */ }
+        fotoBase64 = canvas.toDataURL('image/jpeg', 0.5);
+      } catch (e) { }
+    }
+    const preview2 = document.getElementById('foto2-preview');
+    if (preview2 && preview2.src && !preview2.classList.contains('hidden')) {
+      try {
+        const canvas2 = document.createElement('canvas');
+        canvas2.width = preview2.naturalWidth;
+        canvas2.height = preview2.naturalHeight;
+        canvas2.getContext('2d').drawImage(preview2, 0, 0);
+        fotoBase64_2 = canvas2.toDataURL('image/jpeg', 0.5);
+      } catch (e) { }
     }
 
     var registro = {
@@ -337,6 +354,8 @@ async function registrarResultado(resultado) {
       observacion: obsEl ? obsEl.value : '',
       foto_url: fotoUrl,
       foto_base64: fotoBase64,
+      foto_url_2: fotoUrl_2,
+      foto_base64_2: fotoBase64_2,
       ubicacion: '',
       nueva_oficina_id: ofId && ofId.value ? parseInt(ofId.value) : null,
       nuevo_responsable_id: respId && respId.value ? parseInt(respId.value) : null,
@@ -362,6 +381,8 @@ async function registrarResultado(resultado) {
           observacion: registro.observacion,
           foto_url: registro.foto_url,
           foto_base64: registro.foto_base64,
+          foto_url_2: registro.foto_url_2,
+          foto_base64_2: registro.foto_base64_2,
           ubicacion: registro.ubicacion,
           nueva_oficina_id: registro.nueva_oficina_id,
           nuevo_responsable_id: registro.nuevo_responsable_id,
@@ -450,6 +471,7 @@ function setupSync() {
 }
 
 function setupFoto() {
+  // Photo 1
   const btn = document.getElementById('btn-foto');
   const input = document.getElementById('foto-input');
   if (btn && input) {
@@ -457,28 +479,49 @@ function setupFoto() {
     input.addEventListener('change', async e => {
       const file = e.target.files[0];
       if (!file) return;
-
-      // Mostrar preview inmediatamente
       const preview = document.getElementById('foto-preview');
       const reader = new FileReader();
-      reader.onload = () => {
-        preview.src = reader.result;
-        preview.classList.remove('hidden');
-      };
+      reader.onload = () => { preview.src = reader.result; preview.classList.remove('hidden'); };
       reader.readAsDataURL(file);
-
-      // Intentar subir a Cloudinary
-      const formData = new FormData();
-      formData.append('foto', file);
       try {
+        const formData = new FormData();
+        formData.append('foto', file);
         const r = await fetch('/inventario/api/foto', { method: 'POST', body: formData });
         const d = await r.json();
         if (d.url) {
           document.getElementById('foto-url-guardado').value = d.url;
+          var st = document.getElementById('foto-status'); if (st) { st.style.display = 'block'; st.textContent = '✓ Foto 1 subida'; st.style.color = '#28a745'; }
         }
       } catch (e) {
-        // Offline — la foto queda como preview, se sincronizará después
-        console.warn('Foto no subida (offline), se guardará localmente');
+        var st = document.getElementById('foto-status'); if (st) { st.style.display = 'block'; st.textContent = '⏳ Foto 1 guardada localmente'; st.style.color = '#e65100'; }
+        console.warn('Foto1 offline');
+      }
+    });
+  }
+  // Photo 2
+  const btn2 = document.getElementById('btn-foto2');
+  const input2 = document.getElementById('foto2-input');
+  if (btn2 && input2) {
+    btn2.addEventListener('click', () => input2.click());
+    input2.addEventListener('change', async e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const preview = document.getElementById('foto2-preview');
+      const reader = new FileReader();
+      reader.onload = () => { preview.src = reader.result; preview.classList.remove('hidden'); };
+      reader.readAsDataURL(file);
+      try {
+        const formData = new FormData();
+        formData.append('foto', file);
+        const r = await fetch('/inventario/api/foto', { method: 'POST', body: formData });
+        const d = await r.json();
+        if (d.url) {
+          document.getElementById('foto2-url-guardado').value = d.url;
+          var st = document.getElementById('foto2-status'); if (st) { st.style.display = 'block'; st.textContent = '✓ Foto 2 subida'; st.style.color = '#28a745'; }
+        }
+      } catch (e) {
+        var st = document.getElementById('foto2-status'); if (st) { st.style.display = 'block'; st.textContent = '⏳ Foto 2 guardada localmente'; st.style.color = '#e65100'; }
+        console.warn('Foto2 offline');
       }
     });
   }
