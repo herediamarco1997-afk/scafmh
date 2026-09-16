@@ -10,9 +10,9 @@
         <label>Seleccionar Responsable de Origen</label>
         <select name="responsable_origen_id" required>
           <option value="">— Seleccionar —</option>
-          {% for r in responsables_lista %}
+          {% for r, num in responsables_lista %}
           <option value="{{ r.id }}" {% if responsable_origen and r.id == responsable_origen.id %}selected{% endif %}>
-            {{ r.nombre }} — {{ r.cargo or '' }}
+            {{ r.nombre }} — {{ r.cargo or '' }} ({{ num }} activos)
           </option>
           {% endfor %}
         </select>

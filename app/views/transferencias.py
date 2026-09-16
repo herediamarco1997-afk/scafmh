@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, Response, flash, send_file
 from flask_login import login_required, current_user
+from sqlalchemy import func
 from app.models import ActivoFijo, Oficina, Responsable, Transferencia, UnidadAdministrativa, AuxiliarContable
 from app.dbf_export import export_all
 from app.pdf_reportes import generar_pdf_acta_transferencia
@@ -97,11 +98,12 @@ def masiva():
     dest_oficinas = Oficina.query.filter_by(estado='ACTIVO').order_by(Oficina.nombre).all()
     dest_responsables = Responsable.query.order_by(Responsable.nombre).all()
 
-    # Get all responsables for the form
-    q_resp = Responsable.query
-    if unidad_id:
-        q_resp = q_resp.join(Oficina).filter(Oficina.unidad_id == unidad_id)
-    responsables_lista = q_resp.order_by(Responsable.nombre).all()
+    # Get all responsables with activo count for the form (sin filtro de unidad)
+    q_resp = db.session.query(
+        Responsable,
+        func.count(ActivoFijo.id).label('num_activos')
+    ).outerjoin(ActivoFijo, ActivoFijo.responsable_id == Responsable.id)
+    responsables_lista = q_resp.group_by(Responsable.id).order_by(Responsable.nombre).all()
 
     if request.method == 'POST':
         accion = request.form.get('accion', '')
@@ -110,10 +112,7 @@ def masiva():
             resp_id = request.form.get('responsable_origen_id', type=int)
             if resp_id:
                 responsable_origen = Responsable.query.get(resp_id)
-                q = ActivoFijo.query.filter_by(responsable_id=resp_id)
-                if unidad_id:
-                    q = q.filter_by(unidad_id=unidad_id)
-                activos = q.order_by(ActivoFijo.codigo).all()
+                activos = ActivoFijo.query.filter_by(responsable_id=resp_id).order_by(ActivoFijo.codigo).all()
 
         elif accion == 'transferir_todos':
             resp_origen_id = request.form.get('resp_origen_id', type=int)
@@ -127,10 +126,7 @@ def masiva():
                 flash('Seleccione un responsable destino', 'danger')
             else:
                 responsable_origen = db.session.get(Responsable, resp_origen_id)
-                q = ActivoFijo.query.filter_by(responsable_id=resp_origen_id)
-                if unidad_id:
-                    q = q.filter_by(unidad_id=unidad_id)
-                activos_origen = q.all()
+                activos_origen = ActivoFijo.query.filter_by(responsable_id=resp_origen_id).all()
                 fec = datetime.strptime(fecha_trans, '%Y-%m-%d').date()
                 count = 0
                 for a in activos_origen:

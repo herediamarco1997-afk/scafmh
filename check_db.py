@@ -1,11 +1,9 @@
-import sqlite3, os
-db = os.path.join(os.path.dirname(__file__), 'activos.db')
-conn = sqlite3.connect(db)
+import sqlite3
+
+conn = sqlite3.connect('D:/sistema de af - copia/sistema_activos/activos.db')
 c = conn.cursor()
-tables = c.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").fetchall()
+tables = c.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
 for t in tables:
-    name = t[0]
-    count = c.execute('SELECT COUNT(*) FROM "' + name + '"').fetchone()[0]
-    cols = [d[1] for d in c.execute('PRAGMA table_info("' + name + '")').fetchall()]
-    print(f'{name:30s} {count:>6d} registros  columnas: {", ".join(cols[:5])}...' if len(cols)>5 else f'{name:30s} {count:>6d} registros  columnas: {", ".join(cols)}')
+    count = c.execute(f"SELECT COUNT(*) FROM [{t[0]}]").fetchone()[0]
+    print(f"{t[0]}: {count}")
 conn.close()
