@@ -316,13 +316,12 @@ async function registrarResultado(resultado) {
     var obsEl = document.getElementById('observacion');
     var fotoEl = document.getElementById('foto-url-guardado');
 
-    // Obtener foto como Base64 si existe (para offline)
+    // Obtener foto como Base64 si existe (para respaldo)
     let fotoBase64 = null;
     let fotoUrl = fotoEl ? fotoEl.value : '';
 
     const preview = document.getElementById('foto-preview');
-    if (preview && preview.src && !preview.classList.contains('hidden') && !fotoUrl) {
-      // La foto está como preview pero no se subió (offline)
+    if (preview && preview.src && !preview.classList.contains('hidden')) {
       try {
         const canvas = document.createElement('canvas');
         canvas.width = preview.naturalWidth;
@@ -352,7 +351,7 @@ async function registrarResultado(resultado) {
     let serverError = null;
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
       const r = await fetch('/inventario/api/guardar', {
         method: 'POST',
         credentials: 'same-origin',
@@ -362,6 +361,7 @@ async function registrarResultado(resultado) {
           resultado: registro.resultado,
           observacion: registro.observacion,
           foto_url: registro.foto_url,
+          foto_base64: registro.foto_base64,
           ubicacion: registro.ubicacion,
           nueva_oficina_id: registro.nueva_oficina_id,
           nuevo_responsable_id: registro.nuevo_responsable_id,

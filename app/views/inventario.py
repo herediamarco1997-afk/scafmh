@@ -274,12 +274,40 @@ def api_guardar_resultado():
         resultado = data.get('resultado', 'VERIFICADO')
         if resultado not in ('VERIFICADO', 'NOVEDAD', 'NO_ENCONTRADO'):
             resultado = 'VERIFICADO'
+
+        # Subir foto: primero intentar foto_url, si no hay, subir base64
+        foto_url = data.get('foto_url', '')
+        foto_base64 = data.get('foto_base64', '')
+        if not foto_url and foto_base64:
+            try:
+                import base64 as b64
+                header, data_b64 = foto_base64.split(',', 1) if ',' in foto_base64 else ('', foto_base64)
+                img_bytes = b64.b64decode(data_b64)
+                import io
+                file_obj = io.BytesIO(img_bytes)
+                file_obj.name = f"inventario_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+                cfg = current_app.config
+                cloud_name = cfg.get('CLOUDINARY_CLOUD_NAME')
+                api_key = cfg.get('CLOUDINARY_API_KEY')
+                api_secret = cfg.get('CLOUDINARY_API_SECRET')
+                if cloud_name and api_key and api_secret:
+                    cloudinary.config(cloud_name=cloud_name, api_key=api_key, api_secret=api_secret)
+                result = cloudinary.uploader.upload(
+                    file_obj,
+                    folder='activos_fotos',
+                    public_id=f"inventario_{codigo}_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}",
+                )
+                foto_url = result.get('secure_url', '')
+            except Exception as photo_err:
+                print(f"Error subiendo foto base64: {photo_err}")
+
         fecha_toma = datetime.fromisoformat(data['fecha_toma']) if data.get('fecha_toma') else datetime.now()
         rec = InventarioFisico.query.filter_by(codigo=codigo).first()
         if rec:
             rec.resultado = resultado
             rec.observacion = data.get('observacion', '')
-            rec.foto_url = data.get('foto_url', '')
+            if foto_url:
+                rec.foto_url = foto_url
             rec.nueva_oficina_id = nueva_oficina_id
             rec.nuevo_responsable_id = nuevo_responsable_id
             rec.nuevo_estado = nuevo_estado
@@ -292,7 +320,7 @@ def api_guardar_resultado():
                 codigo=codigo,
                 resultado=resultado,
                 observacion=data.get('observacion', ''),
-                foto_url=data.get('foto_url', ''),
+                foto_url=foto_url,
                 ubicacion_reportada=data.get('ubicacion', ''),
                 responsable_reportado=data.get('responsable', ''),
                 nueva_oficina_id=nueva_oficina_id,
