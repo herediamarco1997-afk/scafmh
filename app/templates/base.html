@@ -6,6 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="manifest" href="/static/pwa/manifest.json">
     <title>SCAFMH - Sistema de Control de Activos Fijos MH</title>
+    <link rel="stylesheet" href="/static/css/mobile.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; color: #333; }
@@ -104,7 +105,8 @@
             <a href="{{ url_for('main.logout') }}" style="color:#a8c8e8;">Salir</a>
         </div>
     </div>
-    <div class="nav">
+    <div class="nav" id="mainNav">
+        <button class="nav-toggle" onclick="document.getElementById('mainNav').classList.toggle('open')" aria-label="Menu">&#9776;</button>
         <a href="{{ url_for('main.inicio') }}" class="{% if request.endpoint == 'main.inicio' %}active{% endif %}">Inicio</a>
         <a href="{{ url_for('unidades.listar') }}" class="{% if request.endpoint and 'unidades' in request.endpoint %}active{% endif %}">Unidades</a>
         <a href="{{ url_for('oficinas.listar') }}" class="{% if request.endpoint and 'oficinas' in request.endpoint %}active{% endif %}">Oficinas y Responsables</a>
@@ -119,15 +121,17 @@
         <a href="{{ url_for('administracion.panel') }}" class="{% if request.endpoint and 'administracion' in request.endpoint %}active{% endif %}">Administradores</a>
         <a href="{{ url_for('respaldos.listar') }}" class="{% if request.endpoint and 'respaldos' in request.endpoint %}active{% endif %}">Respaldos BD</a>
         {% endif %}
-        <a href="{{ url_for('main.seguridad') }}" style="margin-left:auto;">Seguridad</a>
-        <form method="POST" action="{{ url_for('main.seleccionar_unidad') }}" style="display:inline; margin-left:10px;">
-            <select name="unidad_id" onchange="this.form.submit()" style="padding:5px; border-radius:4px; font-size:12px;">
-                <option value="0" {% if session.get('mostrar_todas') %}selected{% endif %}>TODAS</option>
-                {% for u in unidades %}
-                <option value="{{ u.id }}" {% if session.get('unidad_actual_id') == u.id %}selected{% endif %}>{{ u.codigo }}</option>
-                {% endfor %}
-            </select>
-        </form>
+        <div class="nav-bottom">
+            <a href="{{ url_for('main.seguridad') }}" class="nav-right">Seguridad</a>
+            <form method="POST" action="{{ url_for('main.seleccionar_unidad') }}">
+                <select name="unidad_id" onchange="this.form.submit()">
+                    <option value="0" {% if session.get('mostrar_todas') %}selected{% endif %}>TODAS</option>
+                    {% for u in unidades %}
+                    <option value="{{ u.id }}" {% if session.get('unidad_actual_id') == u.id %}selected{% endif %}>{{ u.codigo }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
     </div>
     {% endif %}
     <div class="container">

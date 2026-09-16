@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="section-title">
-  <a href="{{ url_for('inventario.lista') }}" style="font-size:14px;font-weight:normal">&larr; Volver al panel</a>
-  — Escanear Activos
-  <span style="float:right;font-size:13px;font-weight:normal">
+<div class="section-title" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+  <a href="{{ url_for('inventario.lista') }}" style="font-size:14px;font-weight:normal">&larr; Volver</a>
+  <span>Escanear</span>
+  <span style="margin-left:auto;font-size:13px;font-weight:normal">
     <a href="{{ url_for('inventario.resultados') }}">📋 Resultados</a>
     | <span id="ultimo-guardado" style="color:#4caf50;font-weight:bold"></span>
   </span>
@@ -21,13 +21,13 @@
         Si la etiqueta está dañada o la cámara no reconoce el código,
         <br>escribe el código manualmente:
       </p>
-      <div style="display:flex;gap:8px;max-width:400px;margin:0 auto">
+      <div class="scanner-input-row" style="display:flex;gap:8px;max-width:400px;margin:0 auto">
         <input id="codigo-manual" placeholder="Ej: TSE-01-19355" style="flex:1;padding:8px 12px;border:1px solid #ccc;border-radius:4px;font-size:14px;text-transform:uppercase">
         <button class="btn btn-primary" id="btn-buscar-manual" style="padding:8px 16px;font-size:13px">Buscar</button>
       </div>
       <p id="manual-error" style="color:#dc3545;font-size:12px;margin-top:6px;display:none"></p>
     </div>
-    <p style="text-align:center;margin-top:10px">
+    <p style="text-align:center;margin-top:10px" class="sync-status">
       <span id="pendientes-count" style="display:inline-block;padding:3px 10px;border-radius:10px;background:#fff3cd;font-size:12px">0</span>
       <span style="font-size:12px;color:#666"> resultados pendientes de sync</span>
       <br>
@@ -84,7 +84,7 @@
     <h2>Estado del Bien</h2>
     <div class="form-group">
       <label>Estado actual: <span id="detalle-estado-actual" style="font-weight:bold">-</span></label>
-      <select id="nuevo-estado">
+      <select id="nuevo-estado" class="estado-select">
         <option value="">— Sin cambio —</option>
         <option value="BUENO">BUENO</option>
         <option value="REGULAR">REGULAR</option>
@@ -98,29 +98,29 @@
     <h2>Registrar resultado</h2>
     <div class="form-group">
       <label>Observación</label>
-      <textarea id="observacion" placeholder="Ej: equipo en buen estado, tiene una abolladura..."></textarea>
+      <textarea id="observacion" class="observacion-textarea" placeholder="Ej: equipo en buen estado, tiene una abolladura..."></textarea>
     </div>
     <div class="form-group">
       <label>Foto</label>
       <input type="hidden" id="foto-url-guardado">
-      <button class="btn btn-secondary" id="btn-foto">📸 Tomar foto</button>
+      <button class="btn btn-secondary btn-lg" id="btn-foto" style="width:100%">📸 Tomar foto</button>
       <input type="file" id="foto-input" accept="image/*" capture="environment" style="display:none">
       <img id="foto-preview" class="hidden" style="max-width:200px;margin-top:8px;border-radius:4px">
     </div>
   </div>
 
-  <div id="acciones-registro" class="action-bar" style="flex-wrap:wrap">
-    <button class="btn btn-success" id="btn-verificado" onclick="window.registrarResultado('VERIFICADO')" style="padding:10px 20px;font-size:14px">✅ Verificado</button>
-    <button class="btn btn-warning" id="btn-novedad" onclick="window.registrarResultado('NOVEDAD')" style="padding:10px 20px;font-size:14px">⚠️ Con Novedad</button>
-    <button class="btn btn-danger" id="btn-no-encontrado" onclick="window.registrarResultado('NO_ENCONTRADO')" style="padding:10px 20px;font-size:14px">❌ No Encontrado</button>
-    <button class="btn btn-secondary" id="btn-cancelar" onclick="window.volverAEscanear()" style="padding:10px 20px">Cancelar</button>
+  <div id="acciones-registro" class="action-bar quick-actions" style="flex-wrap:wrap">
+    <button class="btn btn-success btn-lg" id="btn-verificado" onclick="window.registrarResultado('VERIFICADO')">✅ Verificado</button>
+    <button class="btn btn-warning btn-lg" id="btn-novedad" onclick="window.registrarResultado('NOVEDAD')">⚠️ Con Novedad</button>
+    <button class="btn btn-danger btn-lg" id="btn-no-encontrado" onclick="window.registrarResultado('NO_ENCONTRADO')">❌ No Encontrado</button>
+    <button class="btn btn-secondary" id="btn-cancelar" onclick="window.volverAEscanear()">Cancelar</button>
   </div>
   <div id="confirmacion-guardado" class="hidden" style="text-align:center;padding:20px">
     <p id="msg-guardado" style="font-size:18px;font-weight:bold;color:#4caf50"></p>
     <p id="msg-error-guardado" style="font-size:13px;color:#e65100;margin-top:4px;display:none"></p>
-    <div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-      <button class="btn btn-primary" id="btn-volver-escanear" style="padding:10px 20px">📷 Volver a escanear</button>
-      <a href="{{ url_for('inventario.resultados') }}" class="btn btn-secondary" style="padding:10px 20px">📋 Ver resultados</a>
+    <div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;flex-direction:column;align-items:stretch">
+      <button class="btn btn-primary btn-lg" id="btn-volver-escanear">📷 Volver a escanear</button>
+      <a href="{{ url_for('inventario.resultados') }}" class="btn btn-secondary btn-lg">📋 Ver resultados</a>
     </div>
   </div>
 </div>

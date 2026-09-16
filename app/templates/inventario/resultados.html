@@ -1,96 +1,98 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="section-title">
-  <a href="{{ url_for('inventario.lista') }}" style="font-size:14px;font-weight:normal">&larr; Volver al panel</a>
-  — Resultados de toma física
+  <a href="{{ url_for('inventario.lista') }}" style="font-size:14px;font-weight:normal">&larr; Volver</a>
+  — Resultados
 </div>
 
-<div class="card" style="margin-bottom:12px">
-  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-    <label style="font-weight:bold;font-size:14px">Filtrar por día:</label>
-    <form method="GET" style="display:flex;gap:8px;align-items:center">
-      <input type="date" name="fecha" value="{{ fecha_seleccionada or '' }}" style="padding:6px 10px;border:1px solid #ccc;border-radius:4px;font-size:14px">
-      <button type="submit" class="btn btn-primary" style="padding:6px 14px;font-size:13px">Filtrar</button>
-      {% if fecha_seleccionada %}
-      <a href="{{ url_for('inventario.resultados') }}" class="btn btn-secondary" style="padding:6px 14px;font-size:13px">Ver todos</a>
-      {% endif %}
-    </form>
-  </div>
+<div class="card filter-row" style="margin-bottom:12px">
+  <form method="GET" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <label style="font-weight:bold;font-size:14px;white-space:nowrap">Filtrar por día:</label>
+    <input type="date" name="fecha" value="{{ fecha_seleccionada or '' }}" style="padding:6px 10px;border:1px solid #ccc;border-radius:4px;font-size:14px;flex:1;min-width:140px">
+    <button type="submit" class="btn btn-primary">Filtrar</button>
+    {% if fecha_seleccionada %}
+    <a href="{{ url_for('inventario.resultados') }}" class="btn btn-secondary">Ver todos</a>
+    {% endif %}
+  </form>
 </div>
 
 <div class="card" style="margin-bottom:12px;padding:12px;background:#e3f2fd">
   <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-    <span style="font-size:13px;color:#1565c0">📊 <strong id="servidor-count">{{ resultados.total }}</strong> registros sincronizados</span>
-    <span style="font-size:13px;color:#e65100">⏳ <strong id="local-count">0</strong> pendientes locales</span>
-    <button class="btn btn-secondary" id="btn-sync-resultados" style="padding:5px 12px;font-size:12px">Sincronizar pendientes</button>
+    <span style="font-size:13px;color:#1565c0">📊 <strong id="servidor-count">{{ resultados.total }}</strong> sincronizados</span>
+    <span style="font-size:13px;color:#e65100">⏳ <strong id="local-count">0</strong> pendientes</span>
+    <button class="btn btn-secondary" id="btn-sync-resultados">Sincronizar</button>
   </div>
 </div>
 
 <div id="pendientes-locales" class="card" style="display:none;margin-bottom:12px;border-left:4px solid #ff9800">
   <h2 style="color:#e65100;font-size:15px">Pendientes de sincronizar</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>Código</th>
-        <th>Resultado</th>
-        <th>Observación</th>
-        <th>Fecha escaneo</th>
-      </tr>
-    </thead>
-    <tbody id="pendientes-body"></tbody>
-  </table>
+  <div class="table-responsive">
+    <table>
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Resultado</th>
+          <th>Observación</th>
+          <th>Fecha</th>
+        </tr>
+      </thead>
+      <tbody id="pendientes-body"></tbody>
+    </table>
+  </div>
 </div>
 
 <div class="card">
-  <h2>Historial sincronizado {% if fecha_seleccionada %} — {{ fecha_seleccionada }}{% endif %}</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>C&oacute;digo</th>
-        <th>Resultado</th>
-        <th>Estado</th>
-        <th>Observaci&oacute;n</th>
-        <th>Oficina Anterior</th>
-        <th>Responsable Anterior</th>
-        <th>Oficina Nueva</th>
-        <th>Responsable Nuevo</th>
-        <th>Foto</th>
-        <th>Registrado por</th>
-        <th>Fecha</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for r in resultados.items %}
-      <tr>
-        <td><strong>{{ r.codigo }}</strong></td>
-        <td>
-          {% if r.resultado == 'VERIFICADO' %}
-          <span class="badge badge-success">&#10003; Verificado</span>
-          {% elif r.resultado == 'NOVEDAD' %}
-          <span class="badge badge-warning">&#9888; Novedad</span>
-          {% else %}
-          <span class="badge badge-danger">&#10007; No encontrado</span>
-          {% endif %}
-        </td>
-        <td>{{ r.nuevo_estado or (r.activo.estado_bien if r.activo else '-') }}</td>
-        <td>{{ r.observacion or '' }}</td>
-        <td>{{ r.activo.oficina_rel.nombre if r.activo and r.activo.oficina_rel else '-' }}</td>
-        <td>{{ r.activo.responsable_rel.nombre if r.activo and r.activo.responsable_rel else '-' }}</td>
-        <td>{% if r.oficina_nueva %}<span class="badge badge-info">{{ r.oficina_nueva.nombre }}</span>{% else %}—{% endif %}</td>
-        <td>{% if r.responsable_nuevo %}<span class="badge badge-info">{{ r.responsable_nuevo.nombre }}</span>{% else %}—{% endif %}</td>
-        <td>{% if r.foto_url %}<a href="{{ r.foto_url }}" target="_blank"><img src="{{ r.foto_url }}" style="width:60px;height:60px;object-fit:cover;border-radius:4px;border:1px solid #ddd" alt="foto"></a>{% else %}—{% endif %}</td>
-        <td>{{ r.usuario or '-' }}</td>
-        <td>{{ r.fecha_toma.strftime('%d/%m/%Y %H:%M') if r.fecha_toma else (r.fecha_sincronizacion.strftime('%d/%m/%Y %H:%M') if r.fecha_sincronizacion else '-') }}</td>
-      </tr>
-      {% else %}
-      <tr><td colspan="11" style="text-align:center;color:#999">Sin resultados {% if fecha_seleccionada %}para {{ fecha_seleccionada }}{% else %}a&uacute;n{% endif %}</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <h2>Historial{% if fecha_seleccionada %} — {{ fecha_seleccionada }}{% endif %}</h2>
+  <div class="table-responsive">
+    <table>
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Resultado</th>
+          <th>Estado</th>
+          <th>Observación</th>
+          <th class="hide-mobile">Oficina Ant.</th>
+          <th class="hide-mobile">Responsable Ant.</th>
+          <th class="hide-mobile">Oficina Nueva</th>
+          <th class="hide-mobile">Responsable Nuevo</th>
+          <th>Foto</th>
+          <th class="hide-mobile">Registrado</th>
+          <th>Fecha</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in resultados.items %}
+        <tr>
+          <td><strong>{{ r.codigo }}</strong></td>
+          <td>
+            {% if r.resultado == 'VERIFICADO' %}
+            <span class="badge badge-success">✓ Verificado</span>
+            {% elif r.resultado == 'NOVEDAD' %}
+            <span class="badge badge-warning">⚠ Novedad</span>
+            {% else %}
+            <span class="badge badge-danger">✗ No encontrado</span>
+            {% endif %}
+          </td>
+          <td>{{ r.nuevo_estado or (r.activo.estado_bien if r.activo else '-') }}</td>
+          <td>{{ r.observacion or '' }}</td>
+          <td class="hide-mobile">{{ r.activo.oficina_rel.nombre if r.activo and r.activo.oficina_rel else '-' }}</td>
+          <td class="hide-mobile">{{ r.activo.responsable_rel.nombre if r.activo and r.activo.responsable_rel else '-' }}</td>
+          <td class="hide-mobile">{% if r.oficina_nueva %}<span class="badge badge-info">{{ r.oficina_nueva.nombre }}</span>{% else %}—{% endif %}</td>
+          <td class="hide-mobile">{% if r.responsable_nuevo %}<span class="badge badge-info">{{ r.responsable_nuevo.nombre }}</span>{% else %}—{% endif %}</td>
+          <td>{% if r.foto_url %}<a href="{{ r.foto_url }}" target="_blank"><img src="{{ r.foto_url }}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;border:1px solid #ddd" alt="foto"></a>{% else %}—{% endif %}</td>
+          <td class="hide-mobile">{{ r.usuario or '-' }}</td>
+          <td style="white-space:nowrap">{{ r.fecha_toma.strftime('%d/%m %H:%M') if r.fecha_toma else (r.fecha_sincronizacion.strftime('%d/%m %H:%M') if r.fecha_sincronizacion else '-') }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="11" style="text-align:center;color:#999">Sin resultados {% if fecha_seleccionada %}para {{ fecha_seleccionada }}{% endif %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 
 {% if resultados.pages > 1 %}
-<div class="action-bar">
+<div class="action-bar" style="justify-content:center">
   {% if fecha_seleccionada %}{% set base = '?fecha=' + fecha_seleccionada + '&' %}{% else %}{% set base = '?' %}{% endif %}
   {% for p in range(1, resultados.pages + 1) %}
   <a href="{{ base }}page={{ p }}" class="btn btn-sm {% if p == resultados.page %}btn-primary{% else %}btn-secondary{% endif %}">{{ p }}</a>
