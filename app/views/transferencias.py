@@ -119,14 +119,18 @@ def masiva():
             oficina_dest_id = request.form.get('oficina_destino_id', type=int)
             responsable_dest_id = request.form.get('responsable_destino_id', type=int)
             fecha_trans = request.form.get('fecha', str(date.today()))
+            activo_ids = request.form.getlist('activo_ids')
 
             if not resp_origen_id:
                 flash('Seleccione un responsable de origen', 'danger')
             elif not responsable_dest_id:
                 flash('Seleccione un responsable destino', 'danger')
+            elif not activo_ids:
+                flash('Seleccione al menos un activo para transferir', 'danger')
             else:
                 responsable_origen = db.session.get(Responsable, resp_origen_id)
-                activos_origen = ActivoFijo.query.filter_by(responsable_id=resp_origen_id).all()
+                int_ids = [int(x) for x in activo_ids]
+                activos_origen = ActivoFijo.query.filter(ActivoFijo.id.in_(int_ids)).all()
                 fec = datetime.strptime(fecha_trans, '%Y-%m-%d').date()
                 count = 0
                 for a in activos_origen:

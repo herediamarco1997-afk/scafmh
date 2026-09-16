@@ -33,7 +33,7 @@
 {% endif %}
 
 {% if activos %}
-<form method="POST">
+<form method="POST" id="form-transfer">
   <input type="hidden" name="accion" value="transferir_todos">
   <input type="hidden" name="resp_origen_id" value="{{ responsable_origen.id if responsable_origen else '' }}">
   <input type="hidden" name="fecha" value="{{ hoy.strftime('%Y-%m-%d') }}">
@@ -63,9 +63,17 @@
   </div>
 
   <div class="card" style="max-height:400px;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px">
+      <label style="font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px">
+        <input type="checkbox" id="select-all" checked onchange="toggleSelectAll(this)">
+        <strong>Seleccionar todos</strong>
+      </label>
+      <span id="selected-count" style="font-size:13px;font-weight:bold;color:#2c5f8a"></span>
+    </div>
     <table style="font-size:11px;">
       <thead>
         <tr>
+          <th style="width:30px"></th>
           <th>Código</th>
           <th>Descripción</th>
           <th>Oficina Actual</th>
@@ -75,6 +83,7 @@
       <tbody>
         {% for a in activos %}
         <tr>
+          <td><input type="checkbox" name="activo_ids" value="{{ a.id }}" class="activo-check" checked onchange="updateCount()"></td>
           <td><a href="{{ url_for('activos.ver', id=a.id) }}">{{ a.codigo }}</a></td>
           <td>{{ a.descripcion[:60] }}</td>
           <td>{{ a.oficina_rel.nombre if a.oficina_rel else '' }}</td>
@@ -86,11 +95,31 @@
   </div>
 
   <div class="action-bar">
-    <button type="submit" class="btn btn-danger" onclick="return confirm('¿CONFIRMA transferir TODOS los {{ activos|length }} activos de {{ responsable_origen.nombre if responsable_origen else "" }} al nuevo responsable?')">
-      Transferir Todos ({{ activos|length }} activos)
+    <button type="submit" class="btn btn-danger" id="btn-transferir" onclick="return confirmTransfer()">
+      Transferir (<span id="btn-count">{{ activos|length }}</span> de {{ activos|length }})
     </button>
     <a href="{{ url_for('transferencias.listar') }}" class="btn btn-secondary">Cancelar</a>
   </div>
 </form>
+
+<script>
+function toggleSelectAll(el) {
+  document.querySelectorAll('.activo-check').forEach(cb => cb.checked = el.checked);
+  updateCount();
+}
+function updateCount() {
+  var total = document.querySelectorAll('.activo-check').length;
+  var sel = document.querySelectorAll('.activo-check:checked').length;
+  document.getElementById('selected-count').textContent = sel + ' de ' + total + ' seleccionados';
+  document.getElementById('btn-count').textContent = sel;
+  document.getElementById('select-all').checked = sel === total;
+}
+function confirmTransfer() {
+  var sel = document.querySelectorAll('.activo-check:checked').length;
+  if (sel === 0) { alert('Seleccione al menos un activo'); return false; }
+  return confirm('¿CONFIRMA transferir ' + sel + ' activo(s) de {{ responsable_origen.nombre if responsable_origen else "" }} al nuevo responsable?');
+}
+updateCount();
+</script>
 {% endif %}
 {% endblock %}
