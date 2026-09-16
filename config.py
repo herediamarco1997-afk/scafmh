@@ -21,7 +21,25 @@ UPLOAD_FOLDER = os.path.join(BASE_DIR, 'backups')
 # Cloudinary
 CLOUDINARY_URL = os.getenv('CLOUDINARY_URL', '')
 # Si CLOUDINARY_URL está vacía, extraer de variables individuales
-CLOUDINARY_CLOUD_NAME = os.getenv('CLOUDINARY_CLOUD_NAME', '')
-CLOUDINARY_API_KEY = os.getenv('CLOUDINARY_API_KEY', '')
-CLOUDINARY_API_SECRET = os.getenv('CLOUDINARY_API_SECRET', '')
+if CLOUDINARY_URL and not os.getenv('CLOUDINARY_CLOUD_NAME'):
+    # Parsear cloudinary://key:secret@cloudname
+    try:
+        import re
+        m = re.match(r'cloudinary://(\d+):(.+)@(.+)', CLOUDINARY_URL)
+        if m:
+            CLOUDINARY_API_KEY = m.group(1)
+            CLOUDINARY_API_SECRET = m.group(2)
+            CLOUDINARY_CLOUD_NAME = m.group(3)
+        else:
+            CLOUDINARY_CLOUD_NAME = ''
+            CLOUDINARY_API_KEY = ''
+            CLOUDINARY_API_SECRET = ''
+    except:
+        CLOUDINARY_CLOUD_NAME = ''
+        CLOUDINARY_API_KEY = ''
+        CLOUDINARY_API_SECRET = ''
+else:
+    CLOUDINARY_CLOUD_NAME = os.getenv('CLOUDINARY_CLOUD_NAME', '')
+    CLOUDINARY_API_KEY = os.getenv('CLOUDINARY_API_KEY', '')
+    CLOUDINARY_API_SECRET = os.getenv('CLOUDINARY_API_SECRET', '')
 CLOUDINARY_UPLOAD_PRESET = os.getenv('CLOUDINARY_UPLOAD_PRESET', 'activos_fotos')
