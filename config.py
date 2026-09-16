@@ -18,6 +18,14 @@ SQLALCHEMY_TRACK_MODIFICATIONS = False
 SECRET_KEY = os.getenv('SECRET_KEY', 'scafmh-secret-key-2026')
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'backups')
 
+# Connection pool settings for faster response
+SQLALCHEMY_ENGINE_OPTIONS = {
+    'pool_pre_ping': True,
+    'pool_recycle': 300,
+    'pool_timeout': 20,
+    'max_overflow': 5,
+}
+
 # Cloudinary
 CLOUDINARY_URL = os.getenv('CLOUDINARY_URL', '')
 # Si CLOUDINARY_URL está vacía, extraer de variables individuales

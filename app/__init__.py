@@ -71,16 +71,10 @@ h1{color:#1a3a5c;font-size:20px}p{color:#666;font-size:14px}</style></head>
 <body><div class="box"><h1>SCAFMH</h1><p>El servidor se está reiniciando.<br><br>Esperá 30 segundos y recargá.</p><br><a href="/" style="color:#2c5f8a;font-weight:bold">Recargar</a></div></body></html>'''), 502
 
     with app.app_context():
-        import time
-        for attempt in range(3):
-            try:
-                db.create_all()
-                break
-            except Exception as e:
-                if attempt < 2:
-                    time.sleep(3)
-                else:
-                    print(f"DB connection failed after 3 attempts: {e}")
+        try:
+            db.create_all()
+        except Exception as e:
+            print(f"DB create_all warning: {e}")
 
         try:
             if not Usuario.query.filter_by(username='admin').first():
@@ -91,7 +85,6 @@ h1{color:#1a3a5c;font-size:20px}p{color:#666;font-size:14px}</style></head>
         except Exception:
             pass
 
-        # Migraciones de esquema
         try:
             from sqlalchemy import inspect, text
             insp = inspect(db.engine)
