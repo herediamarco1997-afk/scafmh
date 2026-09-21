@@ -112,6 +112,7 @@
         <a href="{{ url_for('oficinas.listar') }}" class="{% if request.endpoint and 'oficinas' in request.endpoint %}active{% endif %}">Oficinas y Responsables</a>
         <a href="{{ url_for('grupos.listar') }}" class="{% if request.endpoint and 'grupos' in request.endpoint %}active{% endif %}">Grupos y Auxiliares</a>
         <a href="{{ url_for('activos.listar') }}" class="{% if request.endpoint and 'activos' in request.endpoint %}active{% endif %}">Activos Fijos</a>
+        <a href="{{ url_for('activos.trazabilidad') }}" class="{% if request.endpoint == 'activos.trazabilidad' %}active{% endif %}">Trazabilidad</a>
         <a href="{{ url_for('transferencias.listar') }}" class="{% if request.endpoint and 'transferencias' in request.endpoint %}active{% endif %}">Transferencias</a>
         {% if current_user.rol in ('ADMINISTRADOR', 'INVENTARIADOR') %}
         <a href="{{ url_for('inventario.lista') }}" class="{% if request.endpoint and 'inventario' in request.endpoint %}active{% endif %}">Toma Física</a>

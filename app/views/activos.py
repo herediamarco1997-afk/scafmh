@@ -273,3 +273,82 @@ def buscar():
             query = query.join(Responsable).filter(Responsable.nombre.contains(q))
     activos = query.order_by(ActivoFijo.codigo).all()
     return render_template('activos/listar.html', activos=activos, q=q, campo=campo, mostrar_todas=mostrar_todas)
+
+
+@activos_bp.route('/trazabilidad')
+@login_required
+def trazabilidad():
+    """Asset traceability: search by code and see full history."""
+    codigo = request.args.get('codigo', '').strip()
+    activo = None
+    historial = []
+
+    if codigo:
+        activo = ActivoFijo.query.filter(
+            ActivoFijo.codigo.ilike(f'%{codigo}%')
+        ).first()
+
+        if activo:
+            # Current assignment
+            oficina_actual = db.session.get(Oficina, activo.oficina_id) if activo.oficina_id else None
+            responsable_actual = db.session.get(Responsable, activo.responsable_id) if activo.responsable_id else None
+            unidad_actual = db.session.get(UnidadAdministrativa, activo.unidad_id) if activo.unidad_id else None
+            grupo_actual = db.session.get(GrupoContable, activo.grupo_id) if activo.grupo_id else None
+
+            # Initial record (creation)
+            historial.append({
+                'tipo': 'ASIGNACION_INICIAL',
+                'fecha': activo.fecha_incorporacion or activo.fecha_adquisicion or 'N/A',
+                'responsable': responsable_actual.nombre if responsable_actual else 'Sin asignar',
+                'oficina': oficina_actual.nombre if oficina_actual else 'Sin oficina',
+                'unidad': unidad_actual.descripcion if unidad_actual else '',
+                'usuario': 'Sistema',
+                'nota': 'Registro inicial del activo en el sistema',
+                'color': '#28a745',
+                'icono': '🟢',
+            })
+
+            # All transfers
+            transfers = Transferencia.query.filter_by(activo_id=activo.id).order_by(Transferencia.fecha, Transferencia.id).all()
+            for t in transfers:
+                resp_origen = db.session.get(Responsable, t.responsable_origen_id) if t.responsable_origen_id else None
+                resp_dest = db.session.get(Responsable, t.responsable_destino_id) if t.responsable_destino_id else None
+                ofi_origen = db.session.get(Oficina, t.oficina_origen_id) if t.oficina_origen_id else None
+                ofi_dest = db.session.get(Oficina, t.oficina_destino_id) if t.oficina_destino_id else None
+
+                # Get acta code if available
+                acta_code = ''
+                if t.acta_id:
+                    from app.models import TransferenciaActa
+                    acta = db.session.get(TransferenciaActa, t.acta_id)
+                    acta_code = acta.codigo if acta else ''
+
+                historial.append({
+                    'tipo': 'TRANSFERENCIA',
+                    'fecha': t.fecha.strftime('%d/%m/%Y') if t.fecha else 'N/A',
+                    'responsable': f'{resp_origen.nombre if resp_origen else "?"} → {resp_dest.nombre if resp_dest else "?"}',
+                    'oficina': f'{ofi_origen.nombre if ofi_origen else "?"} → {ofi_dest.nombre if ofi_dest else "?"}',
+                    'unidad': '',
+                    'usuario': t.usuario or '',
+                    'nota': f'Acta: {acta_code}' if acta_code else '',
+                    'color': '#2c5f8a',
+                    'icono': '🔄',
+                })
+
+            # Inventory records
+            from app.models import InventarioFisico
+            inventarios = InventarioFisico.query.filter_by(activo_id=activo.id).order_by(InventarioFisico.fecha_toma).all()
+            for inv in inventarios:
+                historial.append({
+                    'tipo': 'TOMA_FISICA',
+                    'fecha': inv.fecha_toma.strftime('%d/%m/%Y %H:%M') if inv.fecha_toma else 'N/A',
+                    'responsable': inv.responsable_reportado or responsable_actual.nombre if responsable_actual else '',
+                    'oficina': inv.ubicacion_reportada or oficina_actual.nombre if oficina_actual else '',
+                    'unidad': '',
+                    'usuario': inv.usuario or '',
+                    'nota': f'Resultado: {inv.resultado}',
+                    'color': '#ffc107',
+                    'icono': '📷',
+                })
+
+    return render_template('activos/trazabilidad.html', activo=activo, historial=historial, codigo=codigo)

@@ -3,6 +3,7 @@
 <div class="section-title">Activos Fijos</div>
 <div class="toolbar">
     <a href="{{ url_for('activos.nuevo') }}" class="btn btn-primary">Nuevo Activo</a>
+    <a href="{{ url_for('activos.trazabilidad') }}" class="btn btn-success">🔍 Trazabilidad</a>
     <form method="GET" action="{{ url_for('activos.listar') }}" style="display:flex; gap:8px; margin-left:auto;">
         <select name="campo">
             <option value="codigo" {% if campo == 'codigo' %}selected{% endif %}>Código</option>

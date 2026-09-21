@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-title">🔍 Trazabilidad de Activo Fijo</div>
+
+<!-- Buscador -->
+<div class="card">
+  <form method="GET" style="display:flex;gap:8px;align-items:flex-end;">
+    <div class="form-group" style="flex:1;margin:0;">
+      <label>Código del Activo</label>
+      <input type="text" name="codigo" value="{{ codigo }}" placeholder="Ej: TSE-01-5040" style="width:100%;font-size:16px;" autofocus>
+    </div>
+    <button type="submit" class="btn btn-primary" style="height:38px;">🔍 Buscar</button>
+    {% if activo %}
+    <button type="button" class="btn btn-success" onclick="window.print()" style="height:38px;">🖨️ Imprimir</button>
+    {% endif %}
+  </form>
+</div>
+
+{% if activo %}
+<!-- Datos del Activo -->
+<div class="card">
+  <h2 style="margin-top:0;">📋 Datos del Activo</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+    <div>
+      <label style="font-size:11px;color:#888;display:block;">Código</label>
+      <strong style="font-size:16px;">{{ activo.codigo }}</strong>
+    </div>
+    <div>
+      <label style="font-size:11px;color:#888;display:block;">Descripción</label>
+      <span>{{ activo.descripcion }}</span>
+    </div>
+    <div>
+      <label style="font-size:11px;color:#888;display:block;">Estado</label>
+      <span class="estado-info estado-{{ activo.estado }}">{{ activo.estado }}</span>
+    </div>
+    <div>
+      <label style="font-size:11px;color:#888;display:block;">Grupo Contable</label>
+      <span>{{ activo.grupo_contable.sigla if activo.grupo_contable else '-' }} {{ activo.grupo_contable.descripcion[:30] if activo.grupo_contable else '' }}</span>
+    </div>
+    <div>
+      <label style="font-size:11px;color:#888;display:block;">Costo Inicial</label>
+      <span>Bs. {{ "{:,.2f}".format(activo.costo_inicial|float) }}</span>
+    </div>
+    <div>
+      <label style="font-size:11px;color:#888;display:block;">Fecha Incorporación</label>
+      <span>{{ activo.fecha_incorporacion or '-' }}</span>
+    </div>
+    <div>
+      <label style="font-size:11px;color:#888;display:block;">Oficina Actual</label>
+      <span>{{ activo.oficina_rel.nombre if activo.oficina_rel else '-' }}</span>
+    </div>
+    <div>
+      <label style="font-size:11px;color:#888;display:block;">Responsable Actual</label>
+      <span>{{ activo.responsable_rel.nombre if activo.responsable_rel else '-' }}</span>
+    </div>
+    <div>
+      <label style="font-size:11px;color:#888;display:block;">Unidad</label>
+      <span>{{ activo.unidad.descripcion if activo.unidad else '-' }}</span>
+    </div>
+  </div>
+</div>
+
+<!-- Línea de Tiempo -->
+<div class="card">
+  <h2 style="margin-top:0;">📅 Historial Completo ({{ historial|length }} registros)</h2>
+
+  <div class="timeline">
+    {% for h in historial|reverse %}
+    <div class="timeline-item" style="border-left:3px solid {{ h.color }};padding:12px 16px;margin-bottom:12px;background:{{ h.color }}11;border-radius:0 6px 6px 0;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
+        <div>
+          <span style="font-size:18px;">{{ h.icono }}</span>
+          <strong style="color:{{ h.color }};">{{ h.tipo|replace('_', ' ') }}</strong>
+          {% if h.nota %}<span style="margin-left:8px;font-size:12px;color:#666;">{{ h.nota }}</span>{% endif %}
+        </div>
+        <span style="font-size:12px;color:#888;">{{ h.fecha }}</span>
+      </div>
+      <div style="margin-top:6px;font-size:13px;">
+        <div><strong>Responsable:</strong> {{ h.responsable }}</div>
+        <div><strong>Oficina:</strong> {{ h.oficina }}</div>
+        {% if h.usuario %}<div style="font-size:11px;color:#999;">Registrado por: {{ h.usuario }}</div>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% elif codigo %}
+<div class="card" style="text-align:center;padding:40px;">
+  <div style="font-size:48px;margin-bottom:12px;">❌</div>
+  <h3 style="color:#dc3545;">No se encontró el activo</h3>
+  <p style="color:#666;">No existe un activo con el código "{{ codigo }}"</p>
+</div>
+{% endif %}
+
+<!-- Estilos para impresión -->
+<style>
+  @media print {
+    .header, .nav, .nav-toggle, .toolbar, .btn, form, .nav-bottom { display:none !important; }
+    .container { padding:0; max-width:100%; }
+    .card { box-shadow:none; border:1px solid #ddd; page-break-inside:avoid; }
+    .section-title { font-size:20px; }
+    .timeline-item { background:white !important; }
+    body { background:white; font-size:11px; }
+  }
+  @media (max-width: 768px) {
+    div[style*="grid-template-columns:1fr 1fr 1fr"] {
+      grid-template-columns: 1fr !important;
+    }
+  }
+</style>
+{% endblock %}
