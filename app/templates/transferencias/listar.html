@@ -1,60 +1,82 @@
 {% extends 'base.html' %}
 {% block content %}
 <div class="section-title">Transferencias de Activos</div>
-<div class="card" style="display:flex;gap:12px;margin-bottom:16px;">
+<div class="card" style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
   <a href="{{ url_for('transferencias.individual') }}" class="btn btn-primary">
     + Transferencia Individual
   </a>
   <a href="{{ url_for('transferencias.masiva') }}" class="btn btn-primary">
     + Transferencia Masiva
   </a>
-  <a href="{{ url_for('transferencias.exportar_dbf') }}" class="btn btn-danger" 
+  <a href="{{ url_for('transferencias.exportar_dbf') }}" class="btn btn-danger"
      onclick="return confirm('¿Generar archivos DBF para sincronizar con VSIAF?')">
     Exportar DBF (VSIAF)
   </a>
 </div>
 
 <div class="card">
-  <h3>Historial de Transferencias</h3>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+    <h3 style="margin:0;">📋 Actas de Transferencia ({{ total }})</h3>
+    <span style="font-size:12px;color:#999;">Página {{ page }} de {{ total_pages }}</span>
+  </div>
+
   <table style="font-size:12px;">
     <thead>
       <tr>
+        <th>N° Acta</th>
         <th>Fecha</th>
-        <th>Activo</th>
-        <th>Oficina Origen</th>
-        <th>Responsable Origen</th>
-        <th>Oficina Destino</th>
-        <th>Responsable Destino</th>
+        <th>Origen</th>
+        <th>Destino</th>
+        <th>Cant.</th>
         <th>Usuario</th>
-        <th>Acta</th>
+        <th>Acciones</th>
       </tr>
     </thead>
     <tbody>
-      {% for t in transfers %}
+      {% for a in actas %}
       <tr>
-        <td>{{ t.fecha.strftime('%d/%m/%Y') }}</td>
+        <td><strong style="color:#1a3a5c;">{{ a.codigo }}</strong></td>
+        <td>{{ a.fecha.strftime('%d/%m/%Y') }}</td>
         <td>
-          {% if t.activo %}
-          <a href="{{ url_for('activos.ver', id=t.activo_id) }}">{{ t.activo.codigo }}</a>
-          {% else %}
-          {{ t.activo_id }}
-          {% endif %}
+          {{ a.responsable_origen.nombre if a.responsable_origen else '—' }}
+          <br><small style="color:#888;">{{ a.oficina_origen.nombre if a.oficina_origen else '' }}</small>
         </td>
-        <td>{{ t.oficina_origen.nombre if t.oficina_origen else '—' }}</td>
-        <td>{{ t.responsable_origen.nombre if t.responsable_origen else '—' }}</td>
-        <td>{{ t.oficina_dest.nombre if t.oficina_dest else '—' }}</td>
-        <td>{{ t.responsable_dest.nombre if t.responsable_dest else '—' }}</td>
-        <td>{{ t.usuario or '—' }}</td>
         <td>
-          {% if t.responsable_destino_id %}
-          <a href="{{ url_for('transferencias.acta', responsable_id=t.responsable_destino_id) }}" class="btn btn-sm" style="font-size:10px;padding:2px 6px;">Acta</a>
-          {% endif %}
+          {{ a.responsable_dest.nombre if a.responsable_dest else '—' }}
+          <br><small style="color:#888;">{{ a.oficina_dest.nombre if a.oficina_dest else '' }}</small>
+        </td>
+        <td><span class="badge badge-info">{{ a.cantidad_activos }}</span></td>
+        <td>{{ a.usuario or '—' }}</td>
+        <td style="white-space:nowrap;">
+          <a href="{{ url_for('transferencias.acta_detalle', acta_id=a.id) }}" class="btn btn-sm btn-primary">Ver</a>
+          <a href="{{ url_for('transferencias.acta', acta_id=a.id) }}" class="btn btn-sm btn-success" target="_blank">PDF</a>
         </td>
       </tr>
       {% else %}
-      <tr><td colspan="7" style="text-align:center;color:#999;">No hay transferencias registradas</td></tr>
+      <tr><td colspan="7" style="text-align:center;color:#999;padding:20px;">No hay actas de transferencia registradas</td></tr>
       {% endfor %}
     </tbody>
   </table>
+
+  <!-- Paginación -->
+  {% if total_pages > 1 %}
+  <div style="display:flex;justify-content:center;gap:6px;margin-top:16px;flex-wrap:wrap;">
+    {% if page > 1 %}
+    <a href="?page={{ page - 1 }}" class="btn btn-secondary btn-sm">← Anterior</a>
+    {% endif %}
+    {% for p in range(1, total_pages + 1) %}
+      {% if p == page %}
+      <span class="btn btn-primary btn-sm" style="opacity:0.7">{{ p }}</span>
+      {% elif p <= 3 or p >= total_pages - 2 or (p >= page - 2 and p <= page + 2) %}
+      <a href="?page={{ p }}" class="btn btn-secondary btn-sm">{{ p }}</a>
+      {% elif p == 4 or p == total_pages - 3 %}
+      <span style="padding:4px 8px;">...</span>
+      {% endif %}
+    {% endfor %}
+    {% if page < total_pages %}
+    <a href="?page={{ page + 1 }}" class="btn btn-secondary btn-sm">Siguiente →</a>
+    {% endif %}
+  </div>
+  {% endif %}
 </div>
 {% endblock %}

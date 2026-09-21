@@ -143,8 +143,35 @@ class Transferencia(db.Model):
     # Tracking
     usuario = db.Column(db.String(20))
     fecha_creacion = db.Column(db.DateTime, default=datetime.now)
+    # Acta grouping
+    acta_id = db.Column(db.Integer, db.ForeignKey('transferencias_actas.id'), nullable=True)
     # Relationships
     activo = db.relationship('ActivoFijo', backref='transferencias')
+    oficina_origen = db.relationship('Oficina', foreign_keys=[oficina_origen_id])
+    responsable_origen = db.relationship('Responsable', foreign_keys=[responsable_origen_id])
+    oficina_dest = db.relationship('Oficina', foreign_keys=[oficina_destino_id])
+    responsable_dest = db.relationship('Responsable', foreign_keys=[responsable_destino_id])
+    acta = db.relationship('TransferenciaActa', backref='transferencias')
+
+
+class TransferenciaActa(db.Model):
+    __tablename__ = 'transferencias_actas'
+    id = db.Column(db.Integer, primary_key=True)
+    numero = db.Column(db.Integer, nullable=False)         # Sequential within the year
+    gestion = db.Column(db.Integer, nullable=False)         # e.g. 2026
+    codigo = db.Column(db.String(20), unique=True, nullable=False)  # ACTA-2026-0001
+    fecha = db.Column(db.Date, nullable=False)
+    # Parties
+    oficina_origen_id = db.Column(db.Integer, db.ForeignKey('oficinas.id'), nullable=True)
+    responsable_origen_id = db.Column(db.Integer, db.ForeignKey('responsables.id'), nullable=True)
+    oficina_destino_id = db.Column(db.Integer, db.ForeignKey('oficinas.id'), nullable=True)
+    responsable_destino_id = db.Column(db.Integer, db.ForeignKey('responsables.id'), nullable=True)
+    # Meta
+    cantidad_activos = db.Column(db.Integer, default=0)
+    usuario = db.Column(db.String(20))
+    fecha_creacion = db.Column(db.DateTime, default=datetime.now)
+    notas = db.Column(db.Text)
+    # Relationships
     oficina_origen = db.relationship('Oficina', foreign_keys=[oficina_origen_id])
     responsable_origen = db.relationship('Responsable', foreign_keys=[responsable_origen_id])
     oficina_dest = db.relationship('Oficina', foreign_keys=[oficina_destino_id])

@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="section-title">Detalle de {{ acta.codigo }}</div>
+
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+    <div>
+      <h2 style="margin:0;color:#1a3a5c;">{{ acta.codigo }}</h2>
+      <p style="color:#666;font-size:13px;margin-top:4px;">Fecha: {{ acta.fecha.strftime('%d/%m/%Y') }} | Registrado por: {{ acta.usuario }}</p>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <a href="{{ url_for('transferencias.acta', acta_id=acta.id) }}" class="btn btn-success" target="_blank">📄 Descargar PDF</a>
+      <a href="{{ url_for('transferencias.listar') }}" class="btn btn-secondary">← Volver</a>
+    </div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+  <div class="card">
+    <h3 style="margin-top:0;">📍 Origen</h3>
+    <p><strong>Responsable:</strong> {{ acta.responsable_origen.nombre if acta.responsable_origen else '—' }}</p>
+    <p><strong>Oficina:</strong> {{ acta.oficina_origen.nombre if acta.oficina_origen else '—' }}</p>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0;">📍 Destino</h3>
+    <p><strong>Responsable:</strong> {{ acta.responsable_dest.nombre if acta.responsable_dest else '—' }}</p>
+    <p><strong>Oficina:</strong> {{ acta.oficina_dest.nombre if acta.oficina_dest else '—' }}</p>
+  </div>
+</div>
+
+<div class="card">
+  <h3>📋 Activos Transferidos ({{ transfers|length }})</h3>
+  <div style="overflow-x:auto;">
+    <table style="font-size:12px;">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Descripción</th>
+          <th>Oficina Anterior</th>
+          <th>Responsable Anterior</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in transfers %}
+        <tr>
+          <td>
+            {% if t.activo %}
+            <a href="{{ url_for('activos.ver', id=t.activo_id) }}">{{ t.activo.codigo }}</a>
+            {% else %}
+            ID: {{ t.activo_id }}
+            {% endif %}
+          </td>
+          <td>{{ t.activo.descripcion[:50] if t.activo else '—' }}</td>
+          <td>{{ t.oficina_origen.nombre if t.oficina_origen else '—' }}</td>
+          <td>{{ t.responsable_origen.nombre if t.responsable_origen else '—' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" style="text-align:center;color:#999;">No hay transferencias en esta acta</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<style>
+  @media (max-width: 768px) {
+    div[style*="grid-template-columns:1fr 1fr"] {
+      grid-template-columns: 1fr !important;
+    }
+  }
+</style>
+{% endblock %}

@@ -96,6 +96,30 @@ h1{color:#1a3a5c;font-size:20px}p{color:#666;font-size:14px}</style></head>
                 if 'foto_url_2' not in cols:
                     db.session.execute(text('ALTER TABLE inventario_fisico ADD COLUMN foto_url_2 VARCHAR(500)'))
                     db.session.commit()
+            # Create transferencias_actas table if not exists
+            if not insp.has_table('transferencias_actas'):
+                db.session.execute(text('''CREATE TABLE transferencias_actas (
+                    id SERIAL PRIMARY KEY,
+                    numero INTEGER NOT NULL,
+                    gestion INTEGER NOT NULL,
+                    codigo VARCHAR(20) UNIQUE NOT NULL,
+                    fecha DATE NOT NULL,
+                    oficina_origen_id INTEGER REFERENCES oficinas(id),
+                    responsable_origen_id INTEGER REFERENCES responsables(id),
+                    oficina_destino_id INTEGER REFERENCES oficinas(id),
+                    responsable_destino_id INTEGER REFERENCES responsables(id),
+                    cantidad_activos INTEGER DEFAULT 0,
+                    usuario VARCHAR(20),
+                    fecha_creacion TIMESTAMP DEFAULT NOW(),
+                    notas TEXT
+                )'''))
+                db.session.commit()
+            # Add acta_id to transferencias if missing
+            if insp.has_table('transferencias'):
+                cols = [c['name'] for c in insp.get_columns('transferencias')]
+                if 'acta_id' not in cols:
+                    db.session.execute(text('ALTER TABLE transferencias ADD COLUMN acta_id INTEGER REFERENCES transferencias_actas(id)'))
+                    db.session.commit()
         except Exception:
             pass
 
