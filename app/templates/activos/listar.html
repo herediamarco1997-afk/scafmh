@@ -3,7 +3,7 @@
 <div class="section-title">Activos Fijos</div>
 <div class="toolbar">
     <a href="{{ url_for('activos.nuevo') }}" class="btn btn-primary">Nuevo Activo</a>
-    <form method="GET" action="{{ url_for('activos.buscar') }}" style="display:flex; gap:8px; margin-left:auto;">
+    <form method="GET" action="{{ url_for('activos.listar') }}" style="display:flex; gap:8px; margin-left:auto;">
         <select name="campo">
             <option value="codigo" {% if campo == 'codigo' %}selected{% endif %}>Código</option>
             <option value="descripcion" {% if campo == 'descripcion' %}selected{% endif %}>Descripción</option>
@@ -14,11 +14,25 @@
         <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
         {% if q %}<a href="{{ url_for('activos.listar') }}" class="btn btn-secondary btn-sm">Limpiar</a>{% endif %}
     </form>
-    <a href="{{ url_for('activos.listar') }}?estado=ELABORADO" class="btn btn-warning btn-sm">Elaborados</a>
-    <a href="{{ url_for('activos.listar') }}?estado=APROBADO" class="btn btn-success btn-sm">Aprobados</a>
-    <a href="{{ url_for('activos.listar') }}" class="btn btn-secondary btn-sm">Todos</a>
 </div>
+
+{% if not search_applied %}
+<!-- Estado inicial: sin búsqueda -->
+<div class="card" style="text-align:center; padding:40px 20px;">
+    <div style="font-size:48px; margin-bottom:16px;">🔍</div>
+    <h2 style="margin-bottom:8px; color:#555;">Buscar Activos Fijos</h2>
+    <p style="color:#888; margin-bottom:20px;">Escribí un código, descripción, oficina o responsable para buscar</p>
+    <p style="color:#aaa; font-size:13px;">Total de activos: <strong>{{ total if total else '19,000+' }}</strong></p>
+</div>
+{% else %}
+<!-- Resultados -->
 <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <span style="font-weight:bold; color:#555;">{{ total }} resultado(s) encontrado(s)</span>
+        {% if total_pages > 1 %}
+        <span style="font-size:12px; color:#999;">Página {{ page }} de {{ total_pages }}</span>
+        {% endif %}
+    </div>
     <table>
         <tr>
             <th>Código</th><th>Fecha</th><th>Descripción</th><th>Grupo</th>
@@ -47,8 +61,30 @@
             </td>
         </tr>
         {% else %}
-        <tr><td colspan="{% if mostrar_todas %}10{% else %}9{% endif %}" style="text-align:center; color:#999;">No hay activos fijos registrados</td></tr>
+        <tr><td colspan="{% if mostrar_todas %}10{% else %}9{% endif %}" style="text-align:center; color:#999;">No se encontraron activos con ese criterio</td></tr>
         {% endfor %}
     </table>
+
+    <!-- Paginación -->
+    {% if total_pages > 1 %}
+    <div style="display:flex; justify-content:center; gap:6px; margin-top:16px; flex-wrap:wrap;">
+        {% if page > 1 %}
+        <a href="?q={{ q }}&campo={{ campo }}&page={{ page - 1 }}" class="btn btn-secondary btn-sm">← Anterior</a>
+        {% endif %}
+        {% for p in range(1, total_pages + 1) %}
+            {% if p == page %}
+            <span class="btn btn-primary btn-sm" style="opacity:0.7">{{ p }}</span>
+            {% elif p <= 3 or p >= total_pages - 2 or (p >= page - 2 and p <= page + 2) %}
+            <a href="?q={{ q }}&campo={{ campo }}&page={{ p }}" class="btn btn-secondary btn-sm">{{ p }}</a>
+            {% elif p == 4 or p == total_pages - 3 %}
+            <span style="padding:4px 8px;">...</span>
+            {% endif %}
+        {% endfor %}
+        {% if page < total_pages %}
+        <a href="?q={{ q }}&campo={{ campo }}&page={{ page + 1 }}" class="btn btn-secondary btn-sm">Siguiente →</a>
+        {% endif %}
+    </div>
+    {% endif %}
 </div>
+{% endif %}
 {% endblock %}

@@ -19,8 +19,37 @@ def listar():
     estado = request.args.get('estado', '')
     if estado:
         query = query.filter_by(estado=estado)
-    activos = query.order_by(ActivoFijo.codigo).all()
-    return render_template('activos/listar.html', activos=activos, estado_filtro=estado, mostrar_todas=mostrar_todas)
+
+    # Solo buscar si hay texto o filtro
+    q = request.args.get('q', '').strip()
+    campo = request.args.get('campo', 'codigo')
+    page = request.args.get('page', 1, type=int)
+    per_page = 100
+
+    activos = []
+    total = 0
+    total_pages = 0
+    search_applied = bool(q or estado)
+
+    if q:
+        if campo == 'codigo':
+            query = query.filter(ActivoFijo.codigo.contains(q))
+        elif campo == 'descripcion':
+            query = query.filter(ActivoFijo.descripcion.contains(q))
+        elif campo == 'oficina':
+            query = query.join(Oficina).filter(Oficina.nombre.contains(q))
+        elif campo == 'responsable':
+            query = query.join(Responsable).filter(Responsable.nombre.contains(q))
+
+    if search_applied:
+        total = query.count()
+        total_pages = (total + per_page - 1) // per_page
+        activos = query.order_by(ActivoFijo.codigo).offset((page - 1) * per_page).limit(per_page).all()
+
+    return render_template('activos/listar.html', activos=activos, q=q, campo=campo,
+                           mostrar_todas=mostrar_todas, estado_filtro=estado,
+                           total=total, page=page, total_pages=total_pages,
+                           search_applied=search_applied)
 
 @activos_bp.route('/nuevo', methods=['GET', 'POST'])
 @login_required
