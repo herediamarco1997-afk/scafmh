@@ -2,82 +2,244 @@
 {% block content %}
 <div class="section-title">Transferencia Individual de Activos</div>
 
+<!-- Buscador siempre visible -->
 <div class="card">
-  <form method="POST">
+  <form method="POST" id="form-buscar">
     <input type="hidden" name="accion" value="buscar">
     <div style="display:flex;gap:8px;align-items:flex-end;">
       <div class="form-group" style="flex:1;">
         <label>Buscar activo (código o descripción)</label>
-        <input type="text" name="busqueda" value="{{ busqueda }}" placeholder="Ej: TSE-01-5040" style="width:100%;">
+        <input type="text" name="busqueda" id="campo-busqueda" value="{{ busqueda }}" placeholder="Ej: TSE-01-5040 o MOUSE" style="width:100%;font-size:16px;">
       </div>
-      <button type="submit" class="btn btn-primary">Buscar</button>
+      <button type="submit" class="btn btn-primary">🔍 Buscar</button>
     </div>
   </form>
 </div>
 
+<!-- Lista temporal de activos seleccionados (carrito) -->
+<div class="card" id="carrito-card" style="display:none;border-left:4px solid #28a745;">
+  <h2 style="color:#28a745;">Activos seleccionados (<span id="carrito-count">0</span>)</h2>
+  <div id="carrito-vacio" style="color:#999;font-size:13px;margin-bottom:8px;">Agregá activos desde los resultados de búsqueda</div>
+  <table id="carrito-table" style="font-size:11px;display:none;">
+    <thead>
+      <tr>
+        <th>Código</th>
+        <th>Descripción</th>
+        <th>Oficina Actual</th>
+        <th style="width:60px;">Quitar</th>
+      </tr>
+    </thead>
+    <tbody id="carrito-body"></tbody>
+  </table>
+</div>
+
+<!-- Resultados de búsqueda -->
 {% if activos %}
-<form method="POST">
-  <input type="hidden" name="accion" value="transferir">
-  <input type="hidden" name="fecha" value="{{ hoy.strftime('%Y-%m-%d') }}">
-
-  <div class="card">
-    <h3>Seleccionar Destino</h3>
-    <div style="display:flex;gap:16px;flex-wrap:wrap;">
-      <div class="form-group">
-        <label>Oficina Destino</label>
-        <select name="oficina_destino_id">
-          <option value="">— Sin cambio —</option>
-          {% for o in dest_oficinas %}
-          <option value="{{ o.id }}">{{ o.nombre }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Responsable Destino <span style="color:red;">*</span></label>
-        <select name="responsable_destino_id" required>
-          <option value="">— Seleccionar —</option>
-          {% for r in dest_responsables %}
-          <option value="{{ r.id }}">{{ r.nombre }} — {{ r.cargo or '' }}</option>
-          {% endfor %}
-        </select>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div style="margin-bottom:8px;">
-      <label><input type="checkbox" id="select_all" onchange="document.querySelectorAll('.activo-cb').forEach(c=>c.checked=this.checked)"> Seleccionar todos</label>
-    </div>
+<div class="card">
+  <h2>Resultados de búsqueda ({{ activos|length }})</h2>
+  <p style="font-size:12px;color:#666;margin-bottom:8px;">Tocá "Agregar" para añadir cada activo a la lista de transferencia</p>
+  <div style="max-height:400px;overflow-y:auto;">
     <table style="font-size:11px;">
       <thead>
         <tr>
-          <th style="width:30px;"></th>
           <th>Código</th>
           <th>Descripción</th>
           <th>Oficina Actual</th>
           <th>Responsable Actual</th>
+          <th style="width:80px;"></th>
         </tr>
       </thead>
       <tbody>
         {% for a in activos %}
-        <tr>
-          <td><input type="checkbox" name="activo_ids" value="{{ a.id }}" class="activo-cb"></td>
+        <tr id="row-{{ a.id }}">
           <td><a href="{{ url_for('activos.ver', id=a.id) }}">{{ a.codigo }}</a></td>
-          <td>{{ a.descripcion[:60] }}</td>
+          <td>{{ a.descripcion[:55] }}</td>
           <td>{{ a.oficina_rel.nombre if a.oficina_rel else '' }}</td>
           <td>{{ a.responsable_rel.nombre if a.responsable_rel else '' }}</td>
+          <td>
+            <button type="button" class="btn btn-sm btn-success" onclick="agregarAlCarrito({{ a.id }}, '{{ a.codigo }}', '{{ a.descripcion[:50]|replace("'", "\\'") }}', '{{ (a.oficina_rel.nombre if a.oficina_rel else '')|replace("'", "\\'") }}')">
+              + Agregar
+            </button>
+          </td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
-
-  <div class="action-bar">
-    <button type="submit" class="btn btn-primary" onclick="return confirm('¿Confirmar transferencia de los activos seleccionados?')">
-      Ejecutar Transferencia
-    </button>
-    <a href="{{ url_for('transferencias.listar') }}" class="btn btn-secondary">Cancelar</a>
-  </div>
-</form>
+</div>
 {% endif %}
+
+<!-- Destino y botón transferir (solo si hay algo en el carrito) -->
+<div id="destino-section" style="display:none;">
+  <form method="POST" id="form-transferir">
+    <input type="hidden" name="accion" value="transferir">
+    <input type="hidden" name="fecha" value="{{ hoy.strftime('%Y-%m-%d') }}">
+    <input type="hidden" id="activo_ids_input" name="activo_ids" value="">
+
+    <div class="card">
+      <h3>Seleccionar Destino</h3>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;">
+        <div class="form-group">
+          <label>Oficina Destino</label>
+          <select name="oficina_destino_id">
+            <option value="">— Sin cambio —</option>
+            {% for o in dest_oficinas %}
+            <option value="{{ o.id }}">{{ o.nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Responsable Destino <span style="color:red;">*</span></label>
+          <input type="text" id="buscar-resp-dest" placeholder="Buscar funcionario..." style="width:100%;font-size:16px;margin-bottom:4px;padding:10px;border:1px solid #ccc;border-radius:4px;" oninput="filterDestinos(this)">
+          <select name="responsable_destino_id" id="select-resp-dest" required>
+            <option value="">— Seleccionar —</option>
+            {% for r in dest_responsables %}
+            <option value="{{ r.id }}">{{ r.nombre }} — {{ r.cargo or '' }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="action-bar">
+      <button type="submit" class="btn btn-danger btn-lg" id="btn-transferir" onclick="return confirmarTransfer()">
+        Transferir (<span id="btn-count">0</span> activos)
+      </button>
+      <button type="button" class="btn btn-secondary" onclick="limpiarCarrito()">Limpiar todo</button>
+      <a href="{{ url_for('transferencias.listar') }}" class="btn btn-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+<style>
+.search-select-input { width:100%; padding:10px 12px; border:1px solid #ccc; border-radius:4px; font-size:16px; margin-bottom:4px; }
+.carrito-row { background: #e8f5e9; }
+.carrito-row td { padding: 6px 8px; border-bottom: 1px solid #c8e6c9; }
+.btn-quitar { background: #dc3545; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 11px; }
+.btn-quitar:hover { background: #c82333; }
+#carrito-table td { white-space: nowrap; }
+@media (max-width: 768px) {
+  #carrito-table td { font-size: 11px; padding: 5px; }
+  #carrito-table th { font-size: 10px; padding: 5px; }
+}
+</style>
+
+<script>
+// ─── Carrito de activos ───────────────────────────────────────────
+var carrito = [];
+
+function agregarAlCarrito(id, codigo, descripcion, oficina) {
+  // Evitar duplicados
+  for (var i = 0; i < carrito.length; i++) {
+    if (carrito[i].id === id) {
+      alert('El activo ' + codigo + ' ya está en la lista');
+      return;
+    }
+  }
+  carrito.push({ id: id, codigo: codigo, descripcion: descripcion, oficina: oficina });
+  renderCarrito();
+  // Deshabilitar botón "Agregar" en la fila de resultados
+  var row = document.getElementById('row-' + id);
+  if (row) {
+    var btn = row.querySelector('.btn-success');
+    if (btn) {
+      btn.textContent = '✓ Agregado';
+      btn.disabled = true;
+      btn.classList.remove('btn-success');
+      btn.classList.add('btn-secondary');
+    }
+  }
+}
+
+function quitarDelCarrito(id) {
+  for (var i = carrito.length - 1; i >= 0; i--) {
+    if (carrito[i].id === id) {
+      carrito.splice(i, 1);
+      break;
+    }
+  }
+  renderCarrito();
+  // Reactivar botón en resultados
+  var row = document.getElementById('row-' + id);
+  if (row) {
+    var btn = row.querySelector('.btn-secondary');
+    if (btn) {
+      btn.textContent = '+ Agregar';
+      btn.disabled = false;
+      btn.classList.remove('btn-secondary');
+      btn.classList.add('btn-success');
+    }
+  }
+}
+
+function renderCarrito() {
+  var count = carrito.length;
+  document.getElementById('carrito-count').textContent = count;
+  document.getElementById('carrito-card').style.display = count > 0 ? 'block' : 'none';
+  document.getElementById('carrito-vacio').style.display = count > 0 ? 'none' : 'block';
+  document.getElementById('carrito-table').style.display = count > 0 ? 'table' : 'none';
+  document.getElementById('destino-section').style.display = count > 0 ? 'block' : 'none';
+  document.getElementById('btn-count').textContent = count;
+
+  var ids = [];
+  var tbody = document.getElementById('carrito-body');
+  tbody.innerHTML = '';
+  for (var i = 0; i < carrito.length; i++) {
+    var item = carrito[i];
+    ids.push(item.id);
+    var tr = document.createElement('tr');
+    tr.className = 'carrito-row';
+    tr.innerHTML = '<td><strong>' + item.codigo + '</strong></td>' +
+      '<td>' + item.descripcion + '</td>' +
+      '<td>' + item.oficina + '</td>' +
+      '<td><button type="button" class="btn-quitar" onclick="quitarDelCarrito(' + item.id + ')">✕ Quitar</button></td>';
+    tbody.appendChild(tr);
+  }
+  document.getElementById('activo_ids_input').value = ids.join(',');
+}
+
+function limpiarCarrito() {
+  if (!confirm('¿Quitar todos los activos de la lista?')) return;
+  // Reactivar todos los botones
+  for (var i = 0; i < carrito.length; i++) {
+    var row = document.getElementById('row-' + carrito[i].id);
+    if (row) {
+      var btn = row.querySelector('.btn-secondary');
+      if (btn) {
+        btn.textContent = '+ Agregar';
+        btn.disabled = false;
+        btn.classList.remove('btn-secondary');
+        btn.classList.add('btn-success');
+      }
+    }
+  }
+  carrito = [];
+  renderCarrito();
+}
+
+function confirmarTransfer() {
+  if (carrito.length === 0) { alert('Agregue al menos un activo'); return false; }
+  return confirm('¿Confirmar transferencia de ' + carrito.length + ' activo(s) al nuevo responsable?');
+}
+
+// ─── Filtrar destinos por búsqueda ────────────────────────────────
+function filterDestinos(input) {
+  var select = document.getElementById('select-resp-dest');
+  var filter = input.value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  var options = select.options;
+  var firstVisible = null;
+  for (var i = 0; i < options.length; i++) {
+    var text = options[i].text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    var match = text.indexOf(filter) !== -1 || filter === '';
+    options[i].style.display = match ? '' : 'none';
+    if (match && !firstVisible && i > 0) firstVisible = options[i];
+  }
+  if (filter && firstVisible) select.value = firstVisible.value;
+}
+
+// ─── Enter en búsqueda ────────────────────────────────────────────
+document.getElementById('campo-busqueda').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') document.getElementById('form-buscar').submit();
+});
+</script>
 {% endblock %}

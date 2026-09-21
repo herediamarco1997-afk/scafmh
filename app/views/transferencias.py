@@ -48,10 +48,13 @@ def individual():
             activos = q.all()
 
         elif accion == 'transferir':
-            activo_ids = request.form.getlist('activo_ids')
+            activo_ids_raw = request.form.get('activo_ids', '')
             oficina_dest_id = request.form.get('oficina_destino_id', type=int)
             responsable_dest_id = request.form.get('responsable_destino_id', type=int)
             fecha_trans = request.form.get('fecha', str(date.today()))
+
+            # Parse comma-separated IDs
+            activo_ids = [int(x.strip()) for x in activo_ids_raw.split(',') if x.strip().isdigit()]
 
             if not activo_ids:
                 flash('Seleccione al menos un activo', 'danger')
@@ -61,7 +64,7 @@ def individual():
                 fec = datetime.strptime(fecha_trans, '%Y-%m-%d').date()
                 count = 0
                 for aid in activo_ids:
-                    a = ActivoFijo.query.get(int(aid))
+                    a = ActivoFijo.query.get(aid)
                     if not a:
                         continue
                     t = Transferencia(
