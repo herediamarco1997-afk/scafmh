@@ -51,9 +51,13 @@ def listar():
     per_page = 20
 
     q = TransferenciaActa.query
-    # Filter by unit if needed
+    # Filter by unit if needed: actas that have transfers with activos in this unit
     if unidad_id and not mostrar_todas:
-        q = q.join(Oficina, TransferenciaActa.oficina_destino_id == Oficina.id).filter(Oficina.unidad_id == unidad_id)
+        from app.models import Transferencia as TModel, ActivoFijo as AFModel
+        acta_ids_with_unit = db.session.query(TModel.acta_id).join(
+            AFModel, TModel.activo_id == AFModel.id
+        ).filter(AFModel.unidad_id == unidad_id, TModel.acta_id.isnot(None)).distinct().subquery()
+        q = q.filter(TransferenciaActa.id.in_(acta_ids_with_unit))
 
     total = q.count()
     total_pages = (total + per_page - 1) // per_page
