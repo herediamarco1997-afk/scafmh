@@ -2,45 +2,62 @@
 {% block content %}
 <div class="section-title">🔍 Módulo de Verificación</div>
 
+<!-- Buscador por funcionario -->
 <div class="card">
-  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
-    <div>
-      <h2 style="margin:0;color:#2c5f8a;">Verificación de Activos Asignados</h2>
-      <p style="color:#666;margin-top:4px;">Usuario: <strong>{{ current_user.username }}</strong> | Rol: <strong>{{ current_user.rol }}</strong></p>
-    </div>
-    <div style="text-align:right;">
-      <div style="font-size:14px;color:#6c757d;">
-        <strong>Total:</strong> {{ total }} activo(s)
-      </div>
-      <div style="font-size:14px;color:#28a745;">
-        <strong>✅ Verificados en página:</strong> {{ activos|selectattr('es_verificado', 'equalto', true)|list|length }}
-      </div>
-    </div>
-  </div>
+  <h2 style="margin-top:0;color:#2c5f8a;">Buscar activos por funcionario</h2>
   
-  <!-- Buscador -->
-  <form method="GET" style="display:flex;gap:8px;align-items:flex-end;margin-bottom:12px;">
-    <div class="form-group" style="flex:1;margin:0;">
-      <label>Buscar por código o descripción</label>
-      <input type="text" name="q" value="{{ busqueda }}" placeholder="Ej: TSE-01-5040 o MOUSE" style="width:100%;font-size:16px;" autofocus>
+  <form method="GET" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+    <div class="form-group" style="flex:1;min-width:250px;margin:0;">
+      <label>Seleccionar funcionario</label>
+      <input type="text" id="buscar-func" placeholder="Escribí nombre del funcionario..." 
+             style="width:100%;font-size:16px;padding:10px;border:1px solid #ccc;border-radius:4px;margin-bottom:4px;" 
+             oninput="filterResponsables(this)">
+      <select name="resp_id" id="select-resp" required style="width:100%;font-size:14px;">
+        <option value="">— Seleccionar funcionario —</option>
+        {% for r, num in responsables_lista %}
+        <option value="{{ r.id }}" {% if responsable and responsable.id == r.id %}selected{% endif %}>
+          {{ r.nombre }} ({{ num }} activos)
+        </option>
+        {% endfor %}
+      </select>
     </div>
-    <button type="submit" class="btn btn-primary" style="height:38px;">🔍 Buscar</button>
-    {% if busqueda %}
-    <a href="{{ url_for('verificacion.listar') }}" class="btn btn-secondary" style="height:38px;">Limpiar</a>
+    <button type="submit" class="btn btn-primary" style="height:42px;">🔍 Buscar</button>
+    {% if responsable %}
+    <a href="{{ url_for('verificacion.constancia', resp_id=responsable.id) }}" 
+       class="btn btn-success" style="height:42px;" target="_blank">🖨️ Imprimir Constancia</a>
     {% endif %}
   </form>
-  
-  {% if not busqueda %}
-  <div style="background:#fff3cd;border:1px solid #ffc107;padding:8px 12px;border-radius:4px;font-size:13px;color:#856404;">
-    💡 Escribí un código o descripción para buscar activos. Con {{ total }} activos en el sistema, la búsqueda es necesaria.
-  </div>
-  {% endif %}
 </div>
 
-<div class="card">
-  <div style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-    <h3 style="margin:0;">📋 Resultados ({{ activos|length }} en página {{ page }} de {{ total_pages }})</h3>
+{% if responsable %}
+<!-- Resumen del funcionario -->
+<div class="card" style="border-left:4px solid #2c5f8a;">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+    <div>
+      <h2 style="margin:0;color:#1a3a5c;">📋 {{ responsable.nombre }}</h2>
+      <p style="color:#666;margin-top:4px;">
+        Cargo: {{ responsable.cargo or '—' }} | 
+        Oficina: {{ responsable.oficina_rel.nombre if responsable.oficina_rel else '—' }}
+      </p>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:16px;"><strong>Total:</strong> {{ activos|length }} activos</div>
+      <div style="font-size:14px;color:#28a745;">
+        ✅ Verificados: <span id="count-verificados">{{ activos|selectattr('es_verificado', 'equalto', true)|list|length }}</span>
+      </div>
+      <div style="font-size:14px;color:#dc3545;">
+        ❌ No verificados: <span id="count-no-verificados">{{ activos|selectattr('es_verificado', 'equalto', false)|list|length }}</span>
+      </div>
+    </div>
   </div>
+</div>
+
+<!-- Lista de activos con checkboxes -->
+<div class="card">
+  <h3 style="margin-top:0;">📋 Activos de {{ responsable.nombre }}</h3>
+  <p style="font-size:12px;color:#666;margin-bottom:12px;">
+    Tiquea ✅ Verificado o ❌ No verificado según el estado real. Para transferir, marca 🔄.
+  </p>
 
   <div style="overflow-x:auto;">
     <table style="font-size:12px;width:100%;border-collapse:collapse;">
@@ -49,42 +66,42 @@
           <th style="padding:8px;text-align:left;">Código</th>
           <th style="padding:8px;text-align:left;">Descripción</th>
           <th style="padding:8px;text-align:left;">Oficina Actual</th>
-          <th style="padding:8px;text-align:left;">Responsable Actual</th>
-          <th style="padding:8px;text-align:center;">✅ Verificado</th>
-          <th style="padding:8px;text-align:center;">❌ No verificado</th>
-          <th style="padding:8px;text-align:center;">🔄 Transferir</th>
+          <th style="padding:8px;text-align:center;width:90px;">✅ Verificado</th>
+          <th style="padding:8px;text-align:center;width:90px;">❌ No verificado</th>
+          <th style="padding:8px;text-align:center;width:80px;">🔄 Transferir</th>
         </tr>
       </thead>
       <tbody>
         {% for activo in activos %}
-        <tr style="border-bottom:1px solid #e0e0e0;">
+        <tr style="border-bottom:1px solid #e0e0e0;" id="row-{{ activo.id }}">
           <td style="padding:8px;">
             <a href="{{ url_for('activos.ver', id=activo.id) }}" style="font-weight:bold;color:#2c5f8a;">
               {{ activo.codigo }}
             </a>
           </td>
-          <td style="padding:8px;">{{ activo.descripcion[:50] }}</td>
+          <td style="padding:8px;">{{ activo.descripcion[:55] }}</td>
           <td style="padding:8px;">{{ activo.oficina_rel.nombre if activo.oficina_rel else '' }}</td>
-          <td style="padding:8px;">{{ activo.responsable_rel.nombre if activo.responsable_rel else '' }}</td>
           <td style="padding:8px;text-align:center;">
-            <input type="checkbox" class="check-verificado" data-id="{{ activo.id }}"
-                   onclick="toggleVerificado({{ activo.id }})"
+            <input type="radio" name="verif_{{ activo.id }}" value="verificado"
+                   class="check-verificado" data-id="{{ activo.id }}"
+                   onchange="updateEstado({{ activo.id }}, 'verificado')"
                    {{ 'checked' if activo.es_verificado else '' }}>
           </td>
           <td style="padding:8px;text-align:center;">
-            <input type="checkbox" class="check-no-verificado" data-id="{{ activo.id }}"
-                   onclick="toggleNoVerificado({{ activo.id }})"
+            <input type="radio" name="verif_{{ activo.id }}" value="no_verificado"
+                   class="check-no-verificado" data-id="{{ activo.id }}"
+                   onchange="updateEstado({{ activo.id }}, 'no_verificado')"
                    {{ 'checked' if not activo.es_verificado else '' }}>
           </td>
           <td style="padding:8px;text-align:center;">
             <input type="checkbox" class="check-transferencia" data-id="{{ activo.id }}"
-                   onclick="toggleTransferencia({{ activo.id }})">
+                   onchange="toggleTransferencia({{ activo.id }})">
           </td>
         </tr>
         {% else %}
         <tr>
-          <td colspan="7" style="padding:20px;text-align:center;color:#999;">
-            {% if busqueda %}No se encontraron activos con "{{ busqueda }}"{% else %}Escribí un código para buscar{% endif %}
+          <td colspan="6" style="padding:20px;text-align:center;color:#999;">
+            Este funcionario no tiene activos asignados
           </td>
         </tr>
         {% endfor %}
@@ -92,47 +109,35 @@
     </table>
   </div>
 
-  <!-- Paginación -->
-  {% if total_pages > 1 %}
-  <div style="display:flex;justify-content:center;gap:6px;margin-top:16px;flex-wrap:wrap;">
-    {% if page > 1 %}
-    <a href="?q={{ busqueda }}&page={{ page - 1 }}" class="btn btn-secondary btn-sm">← Anterior</a>
-    {% endif %}
-    {% for p in range(1, total_pages + 1) %}
-      {% if p == page %}
-      <span class="btn btn-primary btn-sm" style="opacity:0.7">{{ p }}</span>
-      {% elif p <= 3 or p >= total_pages - 2 or (p >= page - 2 and p <= page + 2) %}
-      <a href="?q={{ busqueda }}&page={{ p }}" class="btn btn-secondary btn-sm">{{ p }}</a>
-      {% elif p == 4 or p == total_pages - 3 %}
-      <span style="padding:4px 8px;">...</span>
-      {% endif %}
-    {% endfor %}
-    {% if page < total_pages %}
-    <a href="?q={{ busqueda }}&page={{ page + 1 }}" class="btn btn-secondary btn-sm">Siguiente →</a>
-    {% endif %}
-  </div>
-  {% endif %}
-
+  <!-- Acciones -->
   <div class="action-bar" style="margin-top:20px;">
     <button type="button" class="btn btn-primary" onclick="transferirSeleccionados()" id="btn-transferir" disabled>
       🔄 Transferir seleccionados
     </button>
-    <a href="{{ url_for('transferencias.listar') }}" class="btn btn-secondary">
-      📄 Ver todas las actas
+    <a href="{{ url_for('verificacion.constancia', resp_id=responsable.id) }}" 
+       class="btn btn-success" target="_blank">
+      🖨️ Imprimir Constancia
     </a>
-    <a href="{{ url_for('inventario.lista') }}" class="btn btn-secondary">
-      📷 Ir a toma física
+    <a href="{{ url_for('verificacion.listar') }}" class="btn btn-secondary">
+      ← Cambiar funcionario
     </a>
   </div>
 </div>
 
+{% elif not responsable %}
+<div class="card" style="text-align:center;padding:40px;">
+  <div style="font-size:48px;margin-bottom:16px;">🔍</div>
+  <h2 style="color:#555;margin-bottom:8px;">Seleccioná un funcionario</h2>
+  <p style="color:#888;">Escribí el nombre y elegí un funcionario para ver sus activos</p>
+</div>
+{% endif %}
+
 <style>
-  .check-verificado, .check-no-verificado, .check-transferencia {
-    width: 18px;
-    height: 18px;
-    cursor: pointer;
-    accent-color: #2c5f8a;
+  .check-verificado, .check-no-verificado {
+    width: 18px; height: 18px; cursor: pointer; accent-color: #28a745;
   }
+  .check-no-verificado { accent-color: #dc3545; }
+  .check-transferencia { width: 18px; height: 18px; cursor: pointer; accent-color: #ffc107; }
   @media (max-width: 768px) {
     .action-bar { flex-direction: column; }
     .action-bar .btn { width: 100%; margin-bottom: 8px; }
@@ -140,68 +145,61 @@
 </style>
 
 <script>
-  var activosSeleccionados = { verificados: [], noVerificados: [], transferencias: [] };
+var transferIds = [];
 
-  function toggleVerificado(id) {
-    var checkbox = document.querySelector('.check-verificado[data-id="' + id + '"]');
-    var noCheckbox = document.querySelector('.check-no-verificado[data-id="' + id + '"]');
-    if (checkbox.checked) {
-      if (!activosSeleccionados.verificados.includes(id)) activosSeleccionados.verificados.push(id);
-      activosSeleccionados.noVerificados = activosSeleccionados.noVerificados.filter(function(item) { return item !== id; });
-      if (noCheckbox) noCheckbox.checked = false;
-    } else {
-      activosSeleccionados.verificados = activosSeleccionados.verificados.filter(function(item) { return item !== id; });
-    }
-    actualizarBotonTransferir();
-  }
+function updateEstado(id, tipo) {
+  // Update counters
+  var verCount = document.querySelectorAll('.check-verificado:checked').length;
+  var noCount = document.querySelectorAll('.check-no-verificado:checked').length;
+  var elV = document.getElementById('count-verificados');
+  var elN = document.getElementById('count-no-verificados');
+  if (elV) elV.textContent = verCount;
+  if (elN) elN.textContent = noCount;
+}
 
-  function toggleNoVerificado(id) {
-    var checkbox = document.querySelector('.check-no-verificado[data-id="' + id + '"]');
-    var verCheckbox = document.querySelector('.check-verificado[data-id="' + id + '"]');
-    if (checkbox.checked) {
-      if (!activosSeleccionados.noVerificados.includes(id)) activosSeleccionados.noVerificados.push(id);
-      activosSeleccionados.verificados = activosSeleccionados.verificados.filter(function(item) { return item !== id; });
-      if (verCheckbox) verCheckbox.checked = false;
-    } else {
-      activosSeleccionados.noVerificados = activosSeleccionados.noVerificados.filter(function(item) { return item !== id; });
-    }
-    actualizarBotonTransferir();
+function toggleTransferencia(id) {
+  var cb = document.querySelector('.check-transferencia[data-id="' + id + '"]');
+  if (cb.checked) {
+    if (!transferIds.includes(id)) transferIds.push(id);
+  } else {
+    transferIds = transferIds.filter(function(x) { return x !== id; });
   }
+  var btn = document.getElementById('btn-transferir');
+  if (transferIds.length > 0) {
+    btn.disabled = false;
+    btn.textContent = '🔄 Transferir seleccionados (' + transferIds.length + ')';
+  } else {
+    btn.disabled = true;
+    btn.textContent = '🔄 Transferir seleccionados';
+  }
+}
 
-  function toggleTransferencia(id) {
-    var checkbox = document.querySelector('.check-transferencia[data-id="' + id + '"]');
-    if (checkbox.checked) {
-      if (!activosSeleccionados.transferencias.includes(id)) activosSeleccionados.transferencias.push(id);
-    } else {
-      activosSeleccionados.transferencias = activosSeleccionados.transferencias.filter(function(item) { return item !== id; });
-    }
-    actualizarBotonTransferir();
+function transferirSeleccionados() {
+  if (transferIds.length === 0) { alert('Selecciona al menos un activo'); return; }
+  if (confirm('¿Transferir ' + transferIds.length + ' activo(s)? Se creará una acta.')) {
+    var url = '{{ url_for("verificacion.transferir") }}?';
+    url += 'resp_origen_id={{ responsable.id if responsable else "" }}&';
+    transferIds.forEach(function(id, i) {
+      url += 'activo_ids=' + id;
+      if (i < transferIds.length - 1) url += '&';
+    });
+    window.location.href = url;
   }
+}
 
-  function actualizarBotonTransferir() {
-    var btn = document.getElementById('btn-transferir');
-    if (activosSeleccionados.transferencias.length > 0) {
-      btn.disabled = false;
-      btn.textContent = '🔄 Transferir seleccionados (' + activosSeleccionados.transferencias.length + ')';
-    } else {
-      btn.disabled = true;
-      btn.textContent = '🔄 Transferir seleccionados';
-    }
+// Filter responsables in dropdown
+function filterResponsables(input) {
+  var select = document.getElementById('select-resp');
+  var filter = input.value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  var options = select.options;
+  var firstVisible = null;
+  for (var i = 0; i < options.length; i++) {
+    var text = options[i].text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    var match = text.indexOf(filter) !== -1 || filter === '';
+    options[i].style.display = match ? '' : 'none';
+    if (match && !firstVisible && i > 0) firstVisible = options[i];
   }
-
-  function transferirSeleccionados() {
-    if (activosSeleccionados.transferencias.length === 0) {
-      alert('Selecciona al menos un activo para transferir');
-      return;
-    }
-    if (confirm('¿Transferir los activos seleccionados? Se creará una nueva acta.')) {
-      var url = '{{ url_for("verificacion.transferir") }}?';
-      activosSeleccionados.transferencias.forEach(function(id, index) {
-        url += 'activo_ids=' + id;
-        if (index < activosSeleccionados.transferencias.length - 1) url += '&';
-      });
-      window.location.href = url;
-    }
-  }
+  if (filter && firstVisible) select.value = firstVisible.value;
+}
 </script>
 {% endblock %}

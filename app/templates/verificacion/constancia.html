@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Constancia de Verificación - {{ responsable.nombre }}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: white; color: #333; font-size: 12px; }
+        .page { max-width: 800px; margin: 0 auto; padding: 20px; }
+        
+        /* Header */
+        .header { text-align: center; border-bottom: 3px double #1a3a5c; padding-bottom: 12px; margin-bottom: 16px; }
+        .header h1 { font-size: 16px; color: #1a3a5c; text-transform: uppercase; }
+        .header h2 { font-size: 14px; color: #2c5f8a; margin-top: 4px; }
+        .header p { font-size: 11px; color: #666; margin-top: 4px; }
+        
+        /* Info */
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+        .info-item { font-size: 12px; }
+        .info-item label { font-weight: bold; color: #555; }
+        
+        /* Summary */
+        .summary { background: #f5f7fa; border: 1px solid #ddd; border-radius: 4px; padding: 12px; margin-bottom: 16px; display: flex; justify-content: space-around; text-align: center; }
+        .summary-item { font-size: 13px; }
+        .summary-item .number { font-size: 24px; font-weight: bold; display: block; }
+        .summary-item.verificado .number { color: #28a745; }
+        .summary-item.no-verificado .number { color: #dc3545; }
+        .summary-item.total .number { color: #1a3a5c; }
+        
+        /* Table */
+        table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 16px; }
+        th { background: #1a3a5c; color: white; padding: 8px; text-align: left; font-weight: 600; }
+        td { padding: 6px 8px; border-bottom: 1px solid #ddd; }
+        tr:nth-child(even) { background: #f9f9f9; }
+        .estado-verificado { color: #28a745; font-weight: bold; }
+        .estado-no-verificado { color: #dc3545; font-weight: bold; }
+        
+        /* Footer */
+        .footer { margin-top: 30px; display: flex; justify-content: space-between; }
+        .firma { text-align: center; width: 200px; }
+        .firma .linea { border-top: 1px solid #333; margin-top: 40px; padding-top: 4px; font-size: 11px; }
+        
+        /* Print */
+        @media print {
+            body { font-size: 10px; }
+            .no-print { display: none !important; }
+            .page { padding: 0; max-width: 100%; }
+            @page { margin: 1.5cm; size: letter portrait; }
+        }
+        
+        .btn-print { 
+            display: inline-block; padding: 10px 20px; background: #28a745; color: white; 
+            border: none; border-radius: 4px; cursor: pointer; font-size: 14px; margin: 20px auto; text-align: center;
+        }
+        .btn-print:hover { background: #218838; }
+        .text-center { text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="text-center no-print" style="margin-top:20px;">
+        <button class="btn-print" onclick="window.print()">🖨️ Imprimir Constancia</button>
+        <br>
+        <a href="{{ url_for('verificacion.listar', resp_id=responsable.id) }}" style="color:#2c5f8a;">← Volver a verificación</a>
+    </div>
+
+    <div class="page">
+        <!-- Header -->
+        <div class="header">
+            <h1>Constancia de Verificación de Activos Fijos</h1>
+            <h2>{{ unidad.descripcion if unidad else 'TRIBUNAL SUPREMO ELECTORAL' }}</h2>
+            <p>{{ oficina.nombre if oficina else 'Oficina no asignada' }}</p>
+        </div>
+
+        <!-- Info -->
+        <div class="info-grid">
+            <div class="info-item">
+                <label>Funcionario:</label> {{ responsable.nombre }}
+            </div>
+            <div class="info-item">
+                <label>Cargo:</label> {{ responsable.cargo or '—' }}
+            </div>
+            <div class="info-item">
+                <label>Oficina:</label> {{ oficina.nombre if oficina else '—' }}
+            </div>
+            <div class="info-item">
+                <label>Fecha de verificación:</label> {{ fecha_hoy.strftime('%d/%m/%Y') }}
+            </div>
+            <div class="info-item">
+                <label>Verificado por:</label> {{ current_user.username }}
+            </div>
+            <div class="info-item">
+                <label>Total de activos:</label> {{ total }}
+            </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="summary">
+            <div class="summary-item total">
+                <span class="number">{{ total }}</span>
+                Total Activos
+            </div>
+            <div class="summary-item verificado">
+                <span class="number">{{ n_verificados }}</span>
+                ✅ Verificados
+            </div>
+            <div class="summary-item no-verificado">
+                <span class="number">{{ n_no_verificados }}</span>
+                ❌ No Verificados
+            </div>
+        </div>
+
+        <!-- Table -->
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:30px">#</th>
+                    <th style="width:120px">Código</th>
+                    <th>Descripción</th>
+                    <th style="width:180px">Oficina</th>
+                    <th style="width:110px">Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in reporte %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><strong>{{ item.codigo }}</strong></td>
+                    <td>{{ item.descripcion[:60] }}</td>
+                    <td>{{ item.oficina[:35] }}</td>
+                    <td class="{{ 'estado-verificado' if item.estado == 'VERIFICADO' else 'estado-no-verificado' }}">
+                        {{ '✅ VERIFICADO' if item.estado == 'VERIFICADO' else '❌ NO VERIFICADO' }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="firma">
+                <div class="linea">Verificado por</div>
+                <div>{{ current_user.username }}</div>
+            </div>
+            <div class="firma">
+                <div class="linea">Responsable de Activos</div>
+                <div>{{ responsable.nombre }}</div>
+            </div>
+        </div>
+
+        <p style="text-align:center;font-size:9px;color:#999;margin-top:20px;">
+            SCAFMH - Sistema de Control de Activos Fijos MH | Generado el {{ fecha_hoy.strftime('%d/%m/%Y %H:%M') }}
+        </p>
+    </div>
+</body>
+</html>
