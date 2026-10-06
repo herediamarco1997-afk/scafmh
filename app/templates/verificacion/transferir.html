@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-title">🔄 Transferencia de Activos desde Verificación</div>
+
+<div class="card">
+  <h2 style="margin-top:0;color:#2c5f8a;">Transferir Activos Asignados</h2>
+  
+  <div style="background:#f8f9fa;padding:12px;border-radius:4px;margin-bottom:16px;">
+    <strong>Activos a transferir:</strong> {{ activos|length }}<br>
+    <small style="color:#666;">Selecciona la oficina y responsable destino para todos los activos</small>
+  </div>
+  
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+    <div class="form-group">
+      <label>Oficina Destino</label>
+      <select name="oficina_destino_id" required>
+        <option value="">— Seleccionar —</option>
+        {% for o in dest_oficinas %}
+        <option value="{{ o.id }}">{{ o.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Responsable Destino <span style="color:red;">*</span></label>
+      <select name="responsable_destino_id" required>
+        <option value="">— Seleccionar —</option>
+        {% for r in dest_responsables %}
+        <option value="{{ r.id }}">{{ r.nombre }} — {{ r.cargo or '' }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  
+  <div class="form-group">
+    <label>Fecha de Transferencia</label>
+    <input type="date" name="fecha" value="{{ hoy.isoformat() }}" required>
+  </div>
+</div>
+
+<div class="card">
+  <h3>📋 Resumen de Activos a Transferir</h3>
+  
+  <table style="font-size:12px;">
+    <thead>
+      <tr>
+        <th>Código</th>
+        <th>Descripción</th>
+        <th>Oficina Actual</th>
+        <th>Responsable Actual</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for activo in activos %}
+      <tr>
+        <td><strong>{{ activo.codigo }}</strong></td>
+        <td>{{ activo.descripcion[:50] }}</td>
+        <td>{{ activo.oficina_rel.nombre if activo.oficina_rel else '' }}</td>
+        <td>{{ activo.responsable_rel.nombre if activo.responsable_rel else '' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="action-bar">
+  <button type="submit" class="btn btn-danger btn-lg">
+    🔄 Transferir todos los activos
+  </button>
+  <a href="{{ url_for('verificacion.listar') }}" class="btn btn-secondary">
+    ← Cancelar
+  </a>
+</div>
+{% endblock %}

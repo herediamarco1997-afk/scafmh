@@ -114,6 +114,7 @@
         <a href="{{ url_for('activos.listar') }}" class="{% if request.endpoint and 'activos' in request.endpoint %}active{% endif %}">Activos Fijos</a>
         <a href="{{ url_for('activos.trazabilidad') }}" class="{% if request.endpoint == 'activos.trazabilidad' %}active{% endif %}">Trazabilidad</a>
         <a href="{{ url_for('transferencias.listar') }}" class="{% if request.endpoint and 'transferencias' in request.endpoint %}active{% endif %}">Transferencias</a>
+        <a href="{{ url_for('verificacion.listar') }}" class="{% if request.endpoint and 'verificacion' in request.endpoint %}active{% endif %}">Verificación</a>
         {% if current_user.rol in ('ADMINISTRADOR', 'INVENTARIADOR') %}
         <a href="{{ url_for('inventario.lista') }}" class="{% if request.endpoint and 'inventario' in request.endpoint %}active{% endif %}">Toma Física</a>
         {% endif %}

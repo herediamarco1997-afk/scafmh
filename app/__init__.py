@@ -28,6 +28,7 @@ def create_app():
     from app.views.respaldos import respaldos_bp
     from app.views.transferencias import transferencias_bp
     from app.views.inventario import inventario_bp
+    from app.views.verificacion import verificacion_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(unidades_bp, url_prefix='/unidades')
@@ -39,6 +40,7 @@ def create_app():
     app.register_blueprint(respaldos_bp, url_prefix='/respaldos')
     app.register_blueprint(transferencias_bp)
     app.register_blueprint(inventario_bp)
+    app.register_blueprint(verificacion_bp)
 
     @login_manager.user_loader
     def load_user(user_id):

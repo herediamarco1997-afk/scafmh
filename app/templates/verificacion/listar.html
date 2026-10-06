@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-title">🔍 Módulo de Verificación</div>
+
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+    <div>
+      <h2 style="margin:0;color:#2c5f8a;">Verificación de Activos Asignados</h2>
+      <p style="color:#666;margin-top:4px;">Usuario: <strong>{{ current_user.username }}</strong> | Rol: <strong>{{ current_user.rol }}</strong></p>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:14px;color:#28a745;">
+        <strong>✅ Verificados:</strong> {{ activos|selectattr('es_verificado', 'equalto', true)|list|length }}
+      </div>
+      <div style="font-size:14px;color:#6c757d;">
+        <strong>Total asignados:</strong> {{ activos|length }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">
+    <h3 style="margin:0;">📋 Lista de Verificación</h3>
+    <div style="font-size:12px;color:#666;">
+      Haz clic en los checkboxes para marcar assets como verificados o transferirlos
+    </div>
+  </div>
+
+  <div style="overflow-x:auto;">
+    <table style="font-size:12px;width:100%;border-collapse:collapse;">
+      <thead>
+        <tr style="background:#f5f7fa;">
+          <th style="padding:8px;text-align:left;">Código</th>
+          <th style="padding:8px;text-align:left;">Descripción</th>
+          <th style="padding:8px;text-align:left;">Oficina Actual</th>
+          <th style="padding:8px;text-align:left;">Responsable Actual</th>
+          <th style="padding:8px;text-align:center;">✅ Verificado</th>
+          <th style="padding:8px;text-align:center;">❌ No verificado</th>
+          <th style="padding:8px;text-align:center;">🔄 Transferir</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for activo in activos %}
+        <tr style="border-bottom:1px solid #e0e0e0;">
+          <td style="padding:8px;">
+            <a href="{{ url_for('activos.ver', id=activo.id) }}" style="font-weight:bold;color:#2c5f8a;">
+              {{ activo.codigo }}
+            </a>
+          </td>
+          <td style="padding:8px;">{{ activo.descripcion[:50] }}</td>
+          <td style="padding:8px;">{{ activo.oficina_rel.nombre if activo.oficina_rel else '' }}</td>
+          <td style="padding:8px;">{{ activo.responsable_rel.nombre if activo.responsable_rel else '' }}</td>
+          <td style="padding:8px;text-align:center;">
+            <input type="checkbox" class="check-verificado" data-id="{{ activo.id }}"
+                   onclick="toggleVerificado({{ activo.id }})"
+                   {{ 'checked' if activo.es_verificado else '' }}>
+          </td>
+          <td style="padding:8px;text-align:center;">
+            <input type="checkbox" class="check-no-verificado" data-id="{{ activo.id }}"
+                   onclick="toggleNoVerificado({{ activo.id }})"
+                   {{ 'checked' if not activo.es_verificado else '' }}>
+          </td>
+          <td style="padding:8px;text-align:center;">
+            <input type="checkbox" class="check-transferencia" data-id="{{ activo.id }}"
+                   onclick="toggleTransferencia({{ activo.id }})">
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7" style="padding:20px;text-align:center;color:#999;">
+            No tienes activos asignados
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="action-bar" style="margin-top:20px;">
+    <button type="button" class="btn btn-success" onclick="verificarTodos()">
+      ✅ Marcar todos como verificados
+    </button>
+    <button type="button" class="btn btn-primary" onclick="transferirSeleccionados()" id="btn-transferir" disabled>
+      🔄 Transferir seleccionados
+    </button>
+    <a href="{{ url_for('transferencias.listar') }}" class="btn btn-secondary">
+      📄 Ver todas las actas
+    </a>
+    <a href="{{ url_for('inventario.lista') }}" class="btn btn-info">
+      📷 Ir a toma física
+    </a>
+  </div>
+</div>
+
+<style>
+  .check-verificado, .check-no-verificado, .check-transferencia {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #2c5f8a;
+  }
+  
+  .check-verificado:checked {
+    background-color: #28a745;
+  }
+  
+  .check-no-verificado:checked {
+    background-color: #dc3545;
+  }
+  
+  .check-transferencia:checked {
+    background-color: #ffc107;
+  }
+  
+  @media (max-width: 768px) {
+    .action-bar {
+      flex-direction: column;
+    }
+    .action-bar .btn {
+      width: 100%;
+      margin-bottom: 8px;
+    }
+  }
+</style>
+
+<script>
+  // Estado global de checkboxes
+  var activosSeleccionados = {
+    verificados: [],
+    noVerificados: [],
+    transferencias: []
+  };
+
+  function toggleVerificado(id) {
+    var checkbox = document.querySelector('.check-verificado[data-id="' + id + '"]');
+    if (checkbox.checked) {
+      if (!activosSeleccionados.verificados.includes(id)) {
+        activosSeleccionados.verificados.push(id);
+      }
+      activosSeleccionados.noVerificados = activosSeleccionados.noVerificados.filter(function(item) {
+        return item !== id;
+      });
+    } else {
+      activosSeleccionados.verificados = activosSeleccionados.verificados.filter(function(item) {
+        return item !== id;
+      });
+    }
+    actualizarBotonTransferir();
+  }
+
+  function toggleNoVerificado(id) {
+    var checkbox = document.querySelector('.check-no-verificado[data-id="' + id + '"]');
+    if (checkbox.checked) {
+      if (!activosSeleccionados.noVerificados.includes(id)) {
+        activosSeleccionados.noVerificados.push(id);
+      }
+      activosSeleccionados.verificados = activosSeleccionados.verificados.filter(function(item) {
+        return item !== id;
+      });
+    } else {
+      activosSeleccionados.noVerificados = activosSeleccionados.noVerificados.filter(function(item) {
+        return item !== id;
+      });
+    }
+    actualizarBotonTransferir();
+  }
+
+  function toggleTransferencia(id) {
+    var checkbox = document.querySelector('.check-transferencia[data-id="' + id + '"]');
+    if (checkbox.checked) {
+      if (!activosSeleccionados.transferencias.includes(id)) {
+        activosSeleccionados.transferencias.push(id);
+      }
+    } else {
+      activosSeleccionados.transferencias = activosSeleccionados.transferencias.filter(function(item) {
+        return item !== id;
+      });
+    }
+    actualizarBotonTransferir();
+  }
+
+  function actualizarBotonTransferir() {
+    var btn = document.getElementById('btn-transferir');
+    if (activosSeleccionados.transferencias.length > 0) {
+      btn.disabled = false;
+      btn.textContent = '🔄 Transferir seleccionados (' + activosSeleccionados.transferencias.length + ')';
+    } else {
+      btn.disabled = true;
+      btn.textContent = '🔄 Transferir seleccionados';
+    }
+  }
+
+  function verificarTodos() {
+    if (confirm('¿Marcar todos los activos asignados como verificados?')) {
+      // En un sistema real, esto llamaría a una API
+      alert('Funcionalidad en desarrollo: todos los activos serán marcados como verificados');
+    }
+  }
+
+  function transferirSeleccionados() {
+    if (activosSeleccionados.transferencias.length === 0) {
+      alert('Selecciona al menos un activo para transferir');
+      return;
+    }
+    
+    if (confirm('¿Transferir los activos seleccionados? Se creará una nueva acta.')) {
+      // Construir URL con parámetros
+      var url = '{{ url_for("verificacion.transferir") }}?';
+      activosSeleccionados.transferencias.forEach(function(id, index) {
+        url += 'activo_ids=' + id;
+        if (index < activosSeleccionados.transferencias.length - 1) {
+          url += '&';
+        }
+      });
+      
+      window.location.href = url;
+    }
+  }
+
+  // Inicializar al cargar la página
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.check-verificado').forEach(function(checkbox) {
+      checkbox.addEventListener('change', function() {
+        toggleVerificado(this.dataset.id);
+      });
+    });
+    
+    document.querySelectorAll('.check-no-verificado').forEach(function(checkbox) {
+      checkbox.addEventListener('change', function() {
+        toggleNoVerificado(this.dataset.id);
+      });
+    });
+    
+    document.querySelectorAll('.check-transferencia').forEach(function(checkbox) {
+      checkbox.addEventListener('change', function() {
+        toggleTransferencia(this.dataset.id);
+      });
+    });
+    
+    // Marcar checkboxes inicialmente
+    document.querySelectorAll('.check-verificado').forEach(function(checkbox) {
+      if (checkbox.checked) {
+        toggleVerificado(checkbox.dataset.id);
+      }
+    });
+    
+    document.querySelectorAll('.check-no-verificado').forEach(function(checkbox) {
+      if (checkbox.checked) {
+        toggleNoVerificado(checkbox.dataset.id);
+      }
+    });
+    
+    document.querySelectorAll('.check-transferencia').forEach(function(checkbox) {
+      if (checkbox.checked) {
+        toggleTransferencia(checkbox.dataset.id);
+      }
+    });
+  });
+</script>
+{% endblock %}
