@@ -9,22 +9,37 @@
       <p style="color:#666;margin-top:4px;">Usuario: <strong>{{ current_user.username }}</strong> | Rol: <strong>{{ current_user.rol }}</strong></p>
     </div>
     <div style="text-align:right;">
-      <div style="font-size:14px;color:#28a745;">
-        <strong>✅ Verificados:</strong> {{ activos|selectattr('es_verificado', 'equalto', true)|list|length }}
-      </div>
       <div style="font-size:14px;color:#6c757d;">
-        <strong>Total asignados:</strong> {{ activos|length }}
+        <strong>Total:</strong> {{ total }} activo(s)
+      </div>
+      <div style="font-size:14px;color:#28a745;">
+        <strong>✅ Verificados en página:</strong> {{ activos|selectattr('es_verificado', 'equalto', true)|list|length }}
       </div>
     </div>
   </div>
+  
+  <!-- Buscador -->
+  <form method="GET" style="display:flex;gap:8px;align-items:flex-end;margin-bottom:12px;">
+    <div class="form-group" style="flex:1;margin:0;">
+      <label>Buscar por código o descripción</label>
+      <input type="text" name="q" value="{{ busqueda }}" placeholder="Ej: TSE-01-5040 o MOUSE" style="width:100%;font-size:16px;" autofocus>
+    </div>
+    <button type="submit" class="btn btn-primary" style="height:38px;">🔍 Buscar</button>
+    {% if busqueda %}
+    <a href="{{ url_for('verificacion.listar') }}" class="btn btn-secondary" style="height:38px;">Limpiar</a>
+    {% endif %}
+  </form>
+  
+  {% if not busqueda %}
+  <div style="background:#fff3cd;border:1px solid #ffc107;padding:8px 12px;border-radius:4px;font-size:13px;color:#856404;">
+    💡 Escribí un código o descripción para buscar activos. Con {{ total }} activos en el sistema, la búsqueda es necesaria.
+  </div>
+  {% endif %}
 </div>
 
 <div class="card">
-  <div style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">
-    <h3 style="margin:0;">📋 Lista de Verificación</h3>
-    <div style="font-size:12px;color:#666;">
-      Haz clic en los checkboxes para marcar assets como verificados o transferirlos
-    </div>
+  <div style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+    <h3 style="margin:0;">📋 Resultados ({{ activos|length }} en página {{ page }} de {{ total_pages }})</h3>
   </div>
 
   <div style="overflow-x:auto;">
@@ -69,7 +84,7 @@
         {% else %}
         <tr>
           <td colspan="7" style="padding:20px;text-align:center;color:#999;">
-            No tienes activos asignados
+            {% if busqueda %}No se encontraron activos con "{{ busqueda }}"{% else %}Escribí un código para buscar{% endif %}
           </td>
         </tr>
         {% endfor %}
@@ -77,17 +92,35 @@
     </table>
   </div>
 
+  <!-- Paginación -->
+  {% if total_pages > 1 %}
+  <div style="display:flex;justify-content:center;gap:6px;margin-top:16px;flex-wrap:wrap;">
+    {% if page > 1 %}
+    <a href="?q={{ busqueda }}&page={{ page - 1 }}" class="btn btn-secondary btn-sm">← Anterior</a>
+    {% endif %}
+    {% for p in range(1, total_pages + 1) %}
+      {% if p == page %}
+      <span class="btn btn-primary btn-sm" style="opacity:0.7">{{ p }}</span>
+      {% elif p <= 3 or p >= total_pages - 2 or (p >= page - 2 and p <= page + 2) %}
+      <a href="?q={{ busqueda }}&page={{ p }}" class="btn btn-secondary btn-sm">{{ p }}</a>
+      {% elif p == 4 or p == total_pages - 3 %}
+      <span style="padding:4px 8px;">...</span>
+      {% endif %}
+    {% endfor %}
+    {% if page < total_pages %}
+    <a href="?q={{ busqueda }}&page={{ page + 1 }}" class="btn btn-secondary btn-sm">Siguiente →</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
   <div class="action-bar" style="margin-top:20px;">
-    <button type="button" class="btn btn-success" onclick="verificarTodos()">
-      ✅ Marcar todos como verificados
-    </button>
     <button type="button" class="btn btn-primary" onclick="transferirSeleccionados()" id="btn-transferir" disabled>
       🔄 Transferir seleccionados
     </button>
     <a href="{{ url_for('transferencias.listar') }}" class="btn btn-secondary">
       📄 Ver todas las actas
     </a>
-    <a href="{{ url_for('inventario.lista') }}" class="btn btn-info">
+    <a href="{{ url_for('inventario.lista') }}" class="btn btn-secondary">
       📷 Ir a toma física
     </a>
   </div>
@@ -100,68 +133,37 @@
     cursor: pointer;
     accent-color: #2c5f8a;
   }
-  
-  .check-verificado:checked {
-    background-color: #28a745;
-  }
-  
-  .check-no-verificado:checked {
-    background-color: #dc3545;
-  }
-  
-  .check-transferencia:checked {
-    background-color: #ffc107;
-  }
-  
   @media (max-width: 768px) {
-    .action-bar {
-      flex-direction: column;
-    }
-    .action-bar .btn {
-      width: 100%;
-      margin-bottom: 8px;
-    }
+    .action-bar { flex-direction: column; }
+    .action-bar .btn { width: 100%; margin-bottom: 8px; }
   }
 </style>
 
 <script>
-  // Estado global de checkboxes
-  var activosSeleccionados = {
-    verificados: [],
-    noVerificados: [],
-    transferencias: []
-  };
+  var activosSeleccionados = { verificados: [], noVerificados: [], transferencias: [] };
 
   function toggleVerificado(id) {
     var checkbox = document.querySelector('.check-verificado[data-id="' + id + '"]');
+    var noCheckbox = document.querySelector('.check-no-verificado[data-id="' + id + '"]');
     if (checkbox.checked) {
-      if (!activosSeleccionados.verificados.includes(id)) {
-        activosSeleccionados.verificados.push(id);
-      }
-      activosSeleccionados.noVerificados = activosSeleccionados.noVerificados.filter(function(item) {
-        return item !== id;
-      });
+      if (!activosSeleccionados.verificados.includes(id)) activosSeleccionados.verificados.push(id);
+      activosSeleccionados.noVerificados = activosSeleccionados.noVerificados.filter(function(item) { return item !== id; });
+      if (noCheckbox) noCheckbox.checked = false;
     } else {
-      activosSeleccionados.verificados = activosSeleccionados.verificados.filter(function(item) {
-        return item !== id;
-      });
+      activosSeleccionados.verificados = activosSeleccionados.verificados.filter(function(item) { return item !== id; });
     }
     actualizarBotonTransferir();
   }
 
   function toggleNoVerificado(id) {
     var checkbox = document.querySelector('.check-no-verificado[data-id="' + id + '"]');
+    var verCheckbox = document.querySelector('.check-verificado[data-id="' + id + '"]');
     if (checkbox.checked) {
-      if (!activosSeleccionados.noVerificados.includes(id)) {
-        activosSeleccionados.noVerificados.push(id);
-      }
-      activosSeleccionados.verificados = activosSeleccionados.verificados.filter(function(item) {
-        return item !== id;
-      });
+      if (!activosSeleccionados.noVerificados.includes(id)) activosSeleccionados.noVerificados.push(id);
+      activosSeleccionados.verificados = activosSeleccionados.verificados.filter(function(item) { return item !== id; });
+      if (verCheckbox) verCheckbox.checked = false;
     } else {
-      activosSeleccionados.noVerificados = activosSeleccionados.noVerificados.filter(function(item) {
-        return item !== id;
-      });
+      activosSeleccionados.noVerificados = activosSeleccionados.noVerificados.filter(function(item) { return item !== id; });
     }
     actualizarBotonTransferir();
   }
@@ -169,13 +171,9 @@
   function toggleTransferencia(id) {
     var checkbox = document.querySelector('.check-transferencia[data-id="' + id + '"]');
     if (checkbox.checked) {
-      if (!activosSeleccionados.transferencias.includes(id)) {
-        activosSeleccionados.transferencias.push(id);
-      }
+      if (!activosSeleccionados.transferencias.includes(id)) activosSeleccionados.transferencias.push(id);
     } else {
-      activosSeleccionados.transferencias = activosSeleccionados.transferencias.filter(function(item) {
-        return item !== id;
-      });
+      activosSeleccionados.transferencias = activosSeleccionados.transferencias.filter(function(item) { return item !== id; });
     }
     actualizarBotonTransferir();
   }
@@ -191,71 +189,19 @@
     }
   }
 
-  function verificarTodos() {
-    if (confirm('¿Marcar todos los activos asignados como verificados?')) {
-      // En un sistema real, esto llamaría a una API
-      alert('Funcionalidad en desarrollo: todos los activos serán marcados como verificados');
-    }
-  }
-
   function transferirSeleccionados() {
     if (activosSeleccionados.transferencias.length === 0) {
       alert('Selecciona al menos un activo para transferir');
       return;
     }
-    
     if (confirm('¿Transferir los activos seleccionados? Se creará una nueva acta.')) {
-      // Construir URL con parámetros
       var url = '{{ url_for("verificacion.transferir") }}?';
       activosSeleccionados.transferencias.forEach(function(id, index) {
         url += 'activo_ids=' + id;
-        if (index < activosSeleccionados.transferencias.length - 1) {
-          url += '&';
-        }
+        if (index < activosSeleccionados.transferencias.length - 1) url += '&';
       });
-      
       window.location.href = url;
     }
   }
-
-  // Inicializar al cargar la página
-  document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.check-verificado').forEach(function(checkbox) {
-      checkbox.addEventListener('change', function() {
-        toggleVerificado(this.dataset.id);
-      });
-    });
-    
-    document.querySelectorAll('.check-no-verificado').forEach(function(checkbox) {
-      checkbox.addEventListener('change', function() {
-        toggleNoVerificado(this.dataset.id);
-      });
-    });
-    
-    document.querySelectorAll('.check-transferencia').forEach(function(checkbox) {
-      checkbox.addEventListener('change', function() {
-        toggleTransferencia(this.dataset.id);
-      });
-    });
-    
-    // Marcar checkboxes inicialmente
-    document.querySelectorAll('.check-verificado').forEach(function(checkbox) {
-      if (checkbox.checked) {
-        toggleVerificado(checkbox.dataset.id);
-      }
-    });
-    
-    document.querySelectorAll('.check-no-verificado').forEach(function(checkbox) {
-      if (checkbox.checked) {
-        toggleNoVerificado(checkbox.dataset.id);
-      }
-    });
-    
-    document.querySelectorAll('.check-transferencia').forEach(function(checkbox) {
-      if (checkbox.checked) {
-        toggleTransferencia(checkbox.dataset.id);
-      }
-    });
-  });
 </script>
 {% endblock %}

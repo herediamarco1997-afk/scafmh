@@ -2,6 +2,12 @@
 {% block content %}
 <div class="section-title">🔄 Transferencia de Activos desde Verificación</div>
 
+<form method="POST" action="{{ url_for('verificacion.transferir') }}">
+<!-- Hidden fields for each selected asset -->
+{% for activo in activos %}
+<input type="hidden" name="activo_ids" value="{{ activo.id }}">
+{% endfor %}
+
 <div class="card">
   <h2 style="margin-top:0;color:#2c5f8a;">Transferir Activos Asignados</h2>
   
@@ -13,8 +19,8 @@
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
     <div class="form-group">
       <label>Oficina Destino</label>
-      <select name="oficina_destino_id" required>
-        <option value="">— Seleccionar —</option>
+      <select name="oficina_destino_id">
+        <option value="">— Sin cambio —</option>
         {% for o in dest_oficinas %}
         <option value="{{ o.id }}">{{ o.nombre }}</option>
         {% endfor %}
@@ -22,7 +28,10 @@
     </div>
     <div class="form-group">
       <label>Responsable Destino <span style="color:red;">*</span></label>
-      <select name="responsable_destino_id" required>
+      <input type="text" id="buscar-resp-dest" placeholder="Buscar funcionario..." 
+             style="width:100%;font-size:16px;margin-bottom:4px;padding:10px;border:1px solid #ccc;border-radius:4px;" 
+             oninput="filterDestinos(this)">
+      <select name="responsable_destino_id" id="select-resp-dest" required>
         <option value="">— Seleccionar —</option>
         {% for r in dest_responsables %}
         <option value="{{ r.id }}">{{ r.nombre }} — {{ r.cargo or '' }}</option>
@@ -40,34 +49,53 @@
 <div class="card">
   <h3>📋 Resumen de Activos a Transferir</h3>
   
-  <table style="font-size:12px;">
-    <thead>
-      <tr>
-        <th>Código</th>
-        <th>Descripción</th>
-        <th>Oficina Actual</th>
-        <th>Responsable Actual</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for activo in activos %}
-      <tr>
-        <td><strong>{{ activo.codigo }}</strong></td>
-        <td>{{ activo.descripcion[:50] }}</td>
-        <td>{{ activo.oficina_rel.nombre if activo.oficina_rel else '' }}</td>
-        <td>{{ activo.responsable_rel.nombre if activo.responsable_rel else '' }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div style="overflow-x:auto;">
+    <table style="font-size:12px;">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Descripción</th>
+          <th>Oficina Actual</th>
+          <th>Responsable Actual</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for activo in activos %}
+        <tr>
+          <td><strong>{{ activo.codigo }}</strong></td>
+          <td>{{ activo.descripcion[:50] }}</td>
+          <td>{{ activo.oficina_rel.nombre if activo.oficina_rel else '' }}</td>
+          <td>{{ activo.responsable_rel.nombre if activo.responsable_rel else '' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <div class="action-bar">
-  <button type="submit" class="btn btn-danger btn-lg">
-    🔄 Transferir todos los activos
+  <button type="submit" class="btn btn-success btn-lg">
+    🔄 Transferir {{ activos|length }} activo(s)
   </button>
   <a href="{{ url_for('verificacion.listar') }}" class="btn btn-secondary">
     ← Cancelar
   </a>
 </div>
+</form>
+
+<script>
+function filterDestinos(input) {
+  var select = document.getElementById('select-resp-dest');
+  var filter = input.value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  var options = select.options;
+  var firstVisible = null;
+  for (var i = 0; i < options.length; i++) {
+    var text = options[i].text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    var match = text.indexOf(filter) !== -1 || filter === '';
+    options[i].style.display = match ? '' : 'none';
+    if (match && !firstVisible && i > 0) firstVisible = options[i];
+  }
+  if (filter && firstVisible) select.value = firstVisible.value;
+}
+</script>
 {% endblock %}

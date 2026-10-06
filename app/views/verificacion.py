@@ -12,25 +12,46 @@ verificacion_bp = Blueprint('verificacion', __name__, url_prefix='/verificacion'
 def listar():
     """Mostrar assets asignados al usuario actual con checkboxes para verificar/transferir"""
     
-    # Obtener activos asignados al usuario actual
-    # Si es ADMINISTRADOR, ve todo; si es OPERADOR/INVENTARIADOR, ve solo los asignados
-    if current_user.rol == 'ADMINISTRADOR':
-        activos = ActivoFijo.query.order_by(ActivoFijo.codigo).all()
-    else:
-        activos = ActivoFijo.query.filter_by(
-            responsable_id=current_user.id
-        ).order_by(ActivoFijo.codigo).all()
+    # Búsqueda opcional para no cargar todo
+    busqueda = request.args.get('q', '').strip()
+    page = request.args.get('page', 1, type=int)
+    per_page = 100
     
-    # Obtener el estado de verificación actual de cada activo desde inventario_fisico
+    q = ActivoFijo.query
+    # Filtrar por usuario si no es admin
+    if current_user.rol != 'ADMINISTRADOR':
+        q = q.filter_by(responsable_id=current_user.id)
+    
+    # Búsqueda por código o descripción
+    if busqueda:
+        q = q.filter(db.or_(
+            ActivoFijo.codigo.ilike(f'%{busqueda}%'),
+            ActivoFijo.descripcion.ilike(f'%{busqueda}%')
+        ))
+    
+    total = q.count()
+    total_pages = (total + per_page - 1) // per_page
+    activos = q.order_by(ActivoFijo.codigo).offset((page - 1) * per_page).limit(per_page).all()
+    
+    # UNA SOLA query para obtener todos los estados de verificación de los activos cargados
+    codigos = [a.codigo for a in activos]
+    verificados = {}
+    if codigos:
+        from sqlalchemy import text
+        rows = db.session.execute(text("""
+            SELECT DISTINCT ON (codigo) codigo, resultado 
+            FROM inventario_fisico 
+            WHERE codigo = ANY(:codigos)
+            ORDER BY codigo, fecha_toma DESC
+        """), {'codigos': codigos}).fetchall()
+        verificados = {r[0]: (r[1] == 'VERIFICADO') for r in rows}
+    
     for activo in activos:
-        # Buscar el inventario más reciente para este activo
-        inventario = InventarioFisico.query.filter_by(
-            codigo=activo.codigo
-        ).order_by(InventarioFisico.fecha_toma.desc()).first()
-        
-        activo.es_verificado = inventario and inventario.resultado == 'VERIFICADO'
+        activo.es_verificado = verificados.get(activo.codigo, False)
     
-    return render_template('verificacion/listar.html', activos=activos)
+    return render_template('verificacion/listar.html', 
+                         activos=activos, busqueda=busqueda,
+                         total=total, page=page, total_pages=total_pages)
 
 @verificacion_bp.route('/transferir', methods=['GET', 'POST'])
 @login_required
